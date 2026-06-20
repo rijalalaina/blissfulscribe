@@ -13,3 +13,8 @@ PROVISIONING_PROFILE_SPECIFIER =
 
 // Add LOCAL_BUILD compilation flag so Swift code can use #if LOCAL_BUILD
 SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) LOCAL_BUILD
+
+// Build a universal binary so the app runs natively on both Intel (x86_64)
+// and Apple Silicon (arm64) Macs, regardless of which machine builds it.
+ARCHS = x86_64 arm64
+ONLY_ACTIVE_ARCH = NO
