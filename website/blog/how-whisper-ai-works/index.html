@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>How Whisper AI Works: The Technology Behind Offline Voice Recognition – BlissfulScribe Blog</title>
+  <meta name="description" content="A clear explanation of how OpenAI's Whisper model works, why offline processing is better for privacy, and how BlissfulScribe uses it to deliver accurate, on-device transcription." />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://scribe.blissfulplan.com/blog/how-whisper-ai-works/" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://scribe.blissfulplan.com/blog/how-whisper-ai-works/" />
+  <meta property="og:title" content="How Whisper AI Works: The Technology Behind Offline Voice Recognition" />
+  <meta property="og:description" content="A clear explanation of how OpenAI's Whisper model works, why offline processing is better for privacy, and how BlissfulScribe uses it." />
+  <meta property="og:site_name" content="BlissfulScribe" />
+  <meta property="article:published_time" content="2026-06-10" />
+  <meta property="article:author" content="BlissfulScribe Team" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="How Whisper AI Works: The Technology Behind Offline Voice Recognition" />
+  <meta name="twitter:description" content="A clear explanation of how OpenAI's Whisper model works, why offline processing is better for privacy, and how BlissfulScribe uses it." />
+
+  <!-- JSON-LD Article -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "How Whisper AI Works: The Technology Behind Offline Voice Recognition",
+    "description": "A clear explanation of how OpenAI's Whisper model works, why offline processing is better for privacy, and how BlissfulScribe uses it to deliver accurate, on-device transcription.",
+    "datePublished": "2026-06-10",
+    "dateModified": "2026-06-10",
+    "author": { "@type": "Organization", "name": "BlissfulScribe Team" },
+    "publisher": {
+      "@type": "Organization",
+      "name": "Blissfulplan Publishing Ltd.",
+      "url": "https://scribe.blissfulplan.com/"
+    },
+    "url": "https://scribe.blissfulplan.com/blog/how-whisper-ai-works/"
+  }
+  </script>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Shared styles -->
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+
+<!-- ── Navigation ─────────────────────────────────────────────────────── -->
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a href="/" class="nav-logo" aria-label="BlissfulScribe home">BlissfulScribe</a>
+
+    <ul class="nav-links" role="list">
+      <li><a href="/#features">Features</a></li>
+      <li><a href="/#pricing">Pricing</a></li>
+      <li><a href="/blog/" style="color: #2563eb;">Blog</a></li>
+      <li><a href="/contact/">Contact</a></li>
+    </ul>
+
+    <div class="nav-right">
+      <a href="/download" class="btn btn-primary btn-sm">Download Free Trial</a>
+    </div>
+
+    <button class="nav-hamburger" id="menuToggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="mobileMenu">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="3" y1="6" x2="21" y2="6"/>
+        <line x1="3" y1="12" x2="21" y2="12"/>
+        <line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="nav-mobile-menu" id="mobileMenu" role="menu">
+    <a href="/#features" role="menuitem">Features</a>
+    <a href="/#pricing" role="menuitem">Pricing</a>
+    <a href="/blog/" role="menuitem">Blog</a>
+    <a href="/contact/" role="menuitem">Contact</a>
+    <a href="/download" class="btn btn-primary nav-mobile-cta" role="menuitem">Download Free Trial</a>
+  </div>
+</nav>
+
+<!-- ── Article ────────────────────────────────────────────────────────── -->
+<main style="padding: 3rem 0 5rem;">
+  <div class="container" style="max-width: 760px;">
+
+    <!-- Breadcrumb -->
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="/">Home</a>
+      <span class="breadcrumb-sep" aria-hidden="true">›</span>
+      <a href="/blog/">Blog</a>
+      <span class="breadcrumb-sep" aria-hidden="true">›</span>
+      <span aria-current="page">How Whisper AI Works</span>
+    </nav>
+
+    <!-- Article header -->
+    <header style="margin-bottom: 2.5rem;">
+      <div style="margin-bottom: 1rem;">
+        <span class="badge badge-category badge-teal">Technology</span>
+        <span style="font-size: 0.8125rem; color: #94a3b8; margin-left: 0.75rem;">6 min read</span>
+      </div>
+
+      <h1 style="font-size: clamp(1.875rem, 4vw, 2.625rem); font-weight: 800; letter-spacing: -0.03em; color: #0f172a; line-height: 1.2; margin-bottom: 1.25rem;">
+        How Whisper AI Works: The Technology Behind Offline Voice Recognition
+      </h1>
+
+      <div style="display: flex; align-items: center; gap: 0.75rem; padding: 1.25rem 0; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;">
+        <div style="width: 2.25rem; height: 2.25rem; border-radius: 50%; background: linear-gradient(135deg, #2563eb, #0d9488); display: flex; align-items: center; justify-content: center; color: white; font-size: 0.875rem; font-weight: 700; flex-shrink: 0;" aria-hidden="true">BS</div>
+        <div>
+          <p style="font-size: 0.9rem; font-weight: 600; color: #0f172a; margin: 0;">BlissfulScribe Team</p>
+          <p style="font-size: 0.8125rem; color: #94a3b8; margin: 0;">Published June 2026</p>
+        </div>
+      </div>
+    </header>
+
+    <!-- Article body -->
+    <div class="article-body">
+
+      <p>
+        Until recently, the best voice recognition technology lived in the cloud. You spoke, your audio travelled to a remote server, a large model processed it, and a transcript came back. The quality was impressive — but so were the privacy implications and the latency.
+      </p>
+
+      <p>
+        That changed when OpenAI released Whisper as an open-source model in 2022. For the first time, a truly state-of-the-art speech recognition system was available to run locally, on consumer hardware, without any server connection. Understanding how Whisper works explains why BlissfulScribe can offer cloud-competitive accuracy with absolute on-device privacy.
+      </p>
+
+      <h2>What Is Whisper?</h2>
+
+      <p>
+        Whisper is an automatic speech recognition (ASR) system developed by OpenAI and trained on 680,000 hours of audio data scraped from the internet. That scale of training data is what gives Whisper its robustness — it has encountered an enormous variety of accents, speaking styles, audio qualities, background noises, and technical vocabularies during training.
+      </p>
+
+      <p>
+        OpenAI released Whisper in multiple sizes: Tiny, Base, Small, Medium, and Large. Each larger model offers higher accuracy in exchange for more memory usage and compute time. BlissfulScribe selects the appropriate model size automatically based on your Mac's hardware, balancing speed and accuracy to give you the best real-time experience your system can provide.
+      </p>
+
+      <h2>How the Model Processes Audio</h2>
+
+      <p>
+        When you speak into BlissfulScribe, the audio pipeline works like this:
+      </p>
+
+      <p>
+        First, your raw audio is captured from the microphone and converted into a mel spectrogram — a visual representation of sound frequency over time, similar to a musical score but for arbitrary audio. This transformation converts the complex acoustic signal into a two-dimensional image that the neural network can process efficiently.
+      </p>
+
+      <p>
+        The spectrogram is passed through an encoder, which is a convolutional neural network (CNN) that extracts features representing the phonetic content of the audio. Think of this as the model identifying which sounds are present, regardless of what words they might form.
+      </p>
+
+      <p>
+        The encoder's output is then fed into a transformer decoder, the same architecture that powers large language models. The decoder uses its knowledge of language — built up through training on hundreds of thousands of hours of transcribed speech — to translate the phonetic features into probable word sequences. This is where Whisper's language understanding makes it robust to ambiguous audio: context helps it choose between words that sound similar.
+      </p>
+
+      <p>
+        The decoder outputs text token by token, and the final result is a transcription along with optional timestamps for each word or phrase. The whole process happens in milliseconds on modern Apple Silicon hardware.
+      </p>
+
+      <h2>Why Accuracy Is So High</h2>
+
+      <p>
+        Several factors contribute to Whisper's accuracy that distinguish it from older speech recognition approaches.
+      </p>
+
+      <p>
+        The training data diversity means Whisper handles accents, dialects, and non-native speech better than systems trained on narrower datasets. It was trained on speech from 99 languages, giving it a broad phonetic foundation even when recognising English.
+      </p>
+
+      <p>
+        The transformer decoder's language model component means Whisper can leverage context when resolving ambiguous sounds. "Their" and "there" sound identical, but Whisper uses surrounding words to pick the right spelling. Technical terms follow a similar logic — if you're discussing software, "Docker" is more likely than "docker" even if both are phonetically plausible.
+      </p>
+
+      <p>
+        Whisper also handles background noise robustly, because the training data included audio from a wide range of recording environments — not just clean studio recordings. This makes it practically useful even in less-than-ideal dictation conditions.
+      </p>
+
+      <h2>Why On-Device Processing Is Better for Privacy</h2>
+
+      <p>
+        The privacy argument for local processing is straightforward: your voice never leaves your device. There is no microphone data transmitted over a network, no audio stored on a remote server, no third-party model trained on your speech. The entire pipeline — from microphone input to transcribed text — happens on your Mac's processor.
+      </p>
+
+      <p>
+        This matters for several reasons beyond abstract privacy preferences. Professionals in healthcare, legal services, finance, and technology often work with information that is sensitive, confidential, or subject to regulatory requirements. Dictating into a cloud service means accepting that audio of those conversations leaves the organisation's control. Local processing eliminates that risk entirely.
+      </p>
+
+      <p>
+        There are also practical benefits. Local processing works on planes, in areas with poor connectivity, in secure facilities without internet access, and anywhere else where cloud services would be unavailable. And it removes latency from the equation — the only delay is your local hardware's processing time, which on Apple Silicon is typically measured in tens of milliseconds.
+      </p>
+
+      <h2>How BlissfulScribe Uses Whisper</h2>
+
+      <p>
+        BlissfulScribe wraps the Whisper model in a native macOS experience designed for day-to-day dictation. Several optimisations make the experience more polished than using Whisper directly.
+      </p>
+
+      <p>
+        Apple Silicon's Neural Engine is used where possible, which dramatically accelerates inference compared to running on the CPU. This is what makes real-time streaming transcription practical — words appear on screen as you speak rather than after a processing pause.
+      </p>
+
+      <p>
+        BlissfulScribe's AI enhancement layer runs as a post-processing step after transcription. This is a separate, lightweight language model that removes filler words ("um", "uh", "you know"), fixes punctuation, corrects capitalisation, and improves overall readability. The result is a transcript that reads like edited prose rather than verbatim speech.
+      </p>
+
+      <p>
+        The custom vocabulary feature works by supplying domain-specific words to Whisper's decoder as preferred candidates, increasing the probability that technical terms, proper nouns, and specialised language are transcribed correctly. This is particularly useful for fields like medicine, law, software development, and finance where standard vocabulary doesn't cover the necessary terminology.
+      </p>
+
+      <h2>The Bottom Line</h2>
+
+      <p>
+        Whisper represents a genuine shift in what's possible with on-device AI. The gap between local and cloud-based speech recognition has narrowed to the point where most users will notice no practical difference in accuracy — while gaining significant advantages in privacy, reliability, and cost.
+      </p>
+
+      <p>
+        BlissfulScribe is built on this foundation, optimised for the specific demands of professional dictation on Mac. If you want to experience what modern offline voice recognition actually feels like in practice, the free trial is the best way to find out.
+      </p>
+
+      <!-- CTA -->
+      <div style="background: linear-gradient(135deg, #eff6ff, #f0fdfa); border: 1px solid #e2e8f0; border-radius: 1rem; padding: 2rem; margin-top: 3rem; text-align: center;">
+        <p style="font-size: 1.0625rem; font-weight: 600; color: #0f172a; margin-bottom: 0.5rem;">Try Whisper AI on your Mac</p>
+        <p style="font-size: 0.9375rem; color: #64748b; margin-bottom: 1.25rem;">BlissfulScribe brings offline Whisper transcription to any app on your Mac — free to try, no internet required.</p>
+        <a href="/download" class="btn btn-primary">Download Free Trial</a>
+      </div>
+
+    </div>
+
+    <!-- Article footer -->
+    <div style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #e2e8f0;">
+      <a href="/blog/" style="display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.9375rem; font-weight: 600; color: #2563eb;">
+        ← Back to Blog
+      </a>
+    </div>
+
+  </div>
+</main>
+
+<!-- ── Footer ─────────────────────────────────────────────────────────── -->
+<footer class="footer" role="contentinfo">
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <a href="/" class="footer-logo" aria-label="BlissfulScribe home">BlissfulScribe</a>
+        <p class="footer-tagline">Instant, private voice-to-text for Mac. Powered by Whisper AI. No cloud, no subscriptions.</p>
+      </div>
+
+      <div>
+        <p class="footer-col-title">Product</p>
+        <ul class="footer-links" role="list">
+          <li><a href="/#features">Features</a></li>
+          <li><a href="/#pricing">Pricing</a></li>
+          <li><a href="/download">Download</a></li>
+          <li><a href="/blog/">Blog</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <p class="footer-col-title">Company</p>
+        <ul class="footer-links" role="list">
+          <li><a href="/privacy/">Privacy Policy</a></li>
+          <li><a href="/terms/">Terms of Service</a></li>
+          <li><a href="/contact/">Contact</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p class="footer-copy">© 2026 Blissfulplan Publishing Ltd. All rights reserved.</p>
+      <p class="footer-company-note">Registered in England and Wales</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+  const menuToggle = document.getElementById('menuToggle');
+  const mobileMenu = document.getElementById('mobileMenu');
+
+  menuToggle.addEventListener('click', function() {
+    const isOpen = mobileMenu.classList.toggle('open');
+    menuToggle.setAttribute('aria-expanded', isOpen.toString());
+  });
+
+  mobileMenu.querySelectorAll('a').forEach(function(link) {
+    link.addEventListener('click', function() {
+      mobileMenu.classList.remove('open');
+      menuToggle.setAttribute('aria-expanded', 'false');
+    });
+  });
+</script>
+
+</body>
+</html>
