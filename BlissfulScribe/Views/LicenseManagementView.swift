@@ -225,7 +225,7 @@ struct LicenseManagementView: View {
             ResourceButton(title: "Report or Feedback", systemImage: "exclamationmark.bubble.fill", tint: neutralIconColor, action: showReportPanel)
 
             ResourceButton(title: "Docs", systemImage: "book.fill", tint: neutralIconColor) {
-                openURL("https://tryblissfulscribe.com/docs")
+                openURL("https://tryscribe.blissfulplan.com/docs")
             }
         }
     }
@@ -239,7 +239,7 @@ struct LicenseManagementView: View {
             ResourceButton(title: "Report or Feedback", systemImage: "exclamationmark.bubble.fill", tint: neutralIconColor, action: showReportPanel)
 
             ResourceButton(title: "Docs", systemImage: "book.fill", tint: neutralIconColor) {
-                openURL("https://tryblissfulscribe.com/docs")
+                openURL("https://tryscribe.blissfulplan.com/docs")
             }
         }
     }

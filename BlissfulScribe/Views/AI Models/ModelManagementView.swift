@@ -287,7 +287,7 @@ struct ModelManagementView: View {
 
             InfoTip(
                 "Add a custom fine-tuned whisper model to use with BlissfulScribe. Select the downloaded .bin file.",
-                learnMoreURL: "https://tryblissfulscribe.com/docs/custom-local-whisper-models"
+                learnMoreURL: "https://tryscribe.blissfulplan.com/docs/custom-local-whisper-models"
             )
             .help("Read more about custom local models")
         }

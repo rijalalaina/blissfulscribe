@@ -5870,18 +5870,18 @@
         }
       }
     },
-    "e.g. support@tryblissfulscribe.com": {
+    "e.g. support@tryscribe.blissfulplan.com": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "z. B. support@tryblissfulscribe.com"
+            "value": "z. B. support@tryscribe.blissfulplan.com"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "例如：support@tryblissfulscribe.com"
+            "value": "例如：support@tryscribe.blissfulplan.com"
           }
         }
       }

@@ -68,13 +68,13 @@ struct DashboardPromotionsSection: View {
     }
     
     private func openSocialShare() {
-        if let url = URL(string: "https://tryblissfulscribe.com/social-share") {
+        if let url = URL(string: "https://tryscribe.blissfulplan.com/social-share") {
             NSWorkspace.shared.open(url)
         }
     }
     
     private func openAffiliateProgram() {
-        if let url = URL(string: "https://tryblissfulscribe.com/affiliate") {
+        if let url = URL(string: "https://tryscribe.blissfulplan.com/affiliate") {
             NSWorkspace.shared.open(url)
         }
     }

@@ -108,7 +108,7 @@ class LicenseViewModel: ObservableObject {
         case .unlicensed, .trialExpired:
             return String(
                 format: String(localized: "Your trial has ended. Upgrade to BlissfulScribe Pro at %@"),
-                "tryblissfulscribe.com/buy"
+                "tryscribe.blissfulplan.com/buy"
             )
         case .trial, .licensed:
             return nil
@@ -116,7 +116,7 @@ class LicenseViewModel: ObservableObject {
     }
     
     func openPurchaseLink() {
-        if let url = URL(string: "https://tryblissfulscribe.com/buy") {
+        if let url = URL(string: "https://tryscribe.blissfulplan.com/buy") {
             NSWorkspace.shared.open(url)
         }
     }
@@ -213,7 +213,7 @@ class LicenseViewModel: ObservableObject {
             logger.error("🔑 Unexpected license error: \(error, privacy: .public)")
             validationMessage = String(
                 format: String(localized: "An unexpected error occurred. Please try again or contact support at %@"),
-                "support@tryblissfulscribe.com"
+                "support@tryscribe.blissfulplan.com"
             )
         }
         

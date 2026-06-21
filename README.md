@@ -9,18 +9,18 @@
   ![GitHub all releases](https://img.shields.io/github/downloads/Beingpax/BlissfulScribe/total)
   ![GitHub stars](https://img.shields.io/github/stars/Beingpax/BlissfulScribe?style=social)
   <p>
-    <a href="https://tryblissfulscribe.com">Website</a> •
+    <a href="https://tryscribe.blissfulplan.com">Website</a> •
     <a href="https://www.youtube.com/@tryblissfulscribe">YouTube</a>
   </p>
 
-  <a href="https://tryblissfulscribe.com">
+  <a href="https://tryscribe.blissfulplan.com">
     <img src="https://img.shields.io/badge/Download%20Now-Latest%20Version-blue?style=for-the-badge&logo=apple" alt="Download BlissfulScribe" width="250"/>
   </a>
 </div>
 
 ---
 
-BlissfulScribe is a native macOS application that transcribes what you say to text almost instantly. You can find all the information and download the app from [here](https://tryblissfulscribe.com). 
+BlissfulScribe is a native macOS application that transcribes what you say to text almost instantly. You can find all the information and download the app from [here](https://tryscribe.blissfulplan.com). 
 
 ![BlissfulScribe Mac App](https://github.com/user-attachments/assets/12367379-83e7-48a6-b52c-4488a6a04bba)
 
@@ -42,7 +42,7 @@ My goal is to make it **the most efficient and privacy-focused voice-to-text sol
 ## Get Started
 
 ### Download
-Get the latest version with a free trial from [tryblissfulscribe.com](https://tryblissfulscribe.com). Your purchase helps me work on BlissfulScribe full-time and continuously improve it with new features and updates.
+Get the latest version with a free trial from [tryscribe.blissfulplan.com](https://tryscribe.blissfulplan.com). Your purchase helps me work on BlissfulScribe full-time and continuously improve it with new features and updates.
 
 #### Homebrew
 Alternatively, you can install BlissfulScribe via `brew`:

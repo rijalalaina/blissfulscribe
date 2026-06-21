@@ -3,7 +3,7 @@ import SwiftUI
 import AppKit
 
 struct EmailSupport {
-    private static let supportEmailAddress = "support@tryblissfulscribe.com"
+    private static let supportEmailAddress = "support@tryscribe.blissfulplan.com"
     private static let supportEmailSubject = "BlissfulScribe Support Request"
 
     static func generateSupportEmailBody() -> String {
@@ -23,7 +23,7 @@ struct EmailSupport {
 
 
         ## 📋 COMMON ISSUES:
-        Check out our Common Issues page before sending an email: https://tryblissfulscribe.com/common-issues
+        Check out our Common Issues page before sending an email: https://tryscribe.blissfulplan.com/common-issues
         ------------------------
 
         System Information:
