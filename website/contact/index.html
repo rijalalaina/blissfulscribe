@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Contact – BlissfulScribe</title>
-  <meta name="description" content="Get in touch with the BlissfulScribe team. For general enquiries, purchase support, or business and press questions, email contact@blissfulplan.com." />
+  <meta name="description" content="Get in touch with the BlissfulScribe team. Use our contact form for general enquiries, purchase support, technical help, refunds, or press enquiries." />
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://scribe.blissfulplan.com/contact/" />
 
@@ -25,6 +25,71 @@
 
   <!-- Shared styles -->
   <link rel="stylesheet" href="/style.css" />
+
+  <style>
+    .form-group { margin-bottom: 1.375rem; }
+    .form-label {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 0.4rem;
+    }
+    .form-input, .form-select, .form-textarea {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      font-size: 0.9375rem;
+      font-family: inherit;
+      color: #0f172a;
+      background: #ffffff;
+      border: 1.5px solid #d1d5db;
+      border-radius: 0.625rem;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      box-sizing: border-box;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+    }
+    .form-textarea { resize: vertical; min-height: 140px; line-height: 1.6; }
+    .form-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.875rem center; padding-right: 2.5rem; }
+    .form-hint { font-size: 0.8125rem; color: #6b7280; margin-top: 0.3rem; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+    .submit-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: linear-gradient(135deg, #2563eb, #0d9488);
+      color: white;
+      font-weight: 700;
+      font-size: 1rem;
+      font-family: inherit;
+      padding: 0.875rem 2rem;
+      border: none;
+      border-radius: 0.625rem;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      width: 100%;
+      justify-content: center;
+    }
+    .submit-btn:hover { opacity: 0.92; }
+    .submit-btn:active { transform: scale(0.98); }
+    .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .success-msg {
+      display: none;
+      text-align: center;
+      padding: 2.5rem 2rem;
+      background: #f0fdf4;
+      border: 1.5px solid #bbf7d0;
+      border-radius: 1rem;
+    }
+    .quick-answer { padding: 1.5rem 1.75rem; border-bottom: 1px solid #e2e8f0; }
+    .quick-answer:last-child { border-bottom: none; }
+    .quick-answer h3 { font-size: 1rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem; }
+    .quick-answer p { font-size: 0.9375rem; color: #64748b; margin: 0; line-height: 1.6; }
+  </style>
 </head>
 <body>
 
@@ -69,106 +134,174 @@
     <h1 style="font-size: clamp(2rem, 4vw, 3rem); font-weight: 800; letter-spacing: -0.03em; color: #0f172a; margin: 0.5rem 0 1rem;">
       Get in Touch
     </h1>
-    <p style="font-size: 1.0625rem; color: #64748b; max-width: 480px; margin: 0 auto; line-height: 1.65;">
-      We're here to help. Whether you have a question about the app, a purchase, or anything else — reach out and we'll get back to you.
+    <p style="font-size: 1.0625rem; color: #64748b; max-width: 500px; margin: 0 auto; line-height: 1.65;">
+      We're a small, focused team and we read every message personally. Fill in the form below and we'll get back to you within one business day.
     </p>
   </div>
 </header>
 
-<!-- ── Contact main ─────────────────────────────────────────────────────── -->
+<!-- ── Main content ─────────────────────────────────────────────────────── -->
 <main class="section">
-  <div class="container" style="max-width: 960px;">
+  <div class="container" style="max-width: 1020px;">
 
-    <!-- Primary email CTA -->
-    <div style="text-align: center; padding: 3rem 2rem; background: linear-gradient(135deg, #eff6ff, #f0fdfa); border: 1px solid #e2e8f0; border-radius: 1.25rem; margin-bottom: 3.5rem; box-shadow: 0 4px 16px rgba(37,99,235,0.06);">
-      <div style="font-size: 3rem; margin-bottom: 1rem;" aria-hidden="true">✉️</div>
-      <h2 style="font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem;">Email Us Directly</h2>
-      <p style="font-size: 1.0625rem; color: #475569; margin-bottom: 1.5rem; line-height: 1.6;">
-        We're a small, focused team and we read every message personally. You'll typically hear back within one business day.
-      </p>
-      <a href="mailto:contact@blissfulplan.com" class="btn btn-primary btn-lg" aria-label="Email contact@blissfulplan.com">
-        contact@blissfulplan.com
-      </a>
-    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: start;">
 
-    <!-- Three contact boxes -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem; margin-bottom: 4rem;">
+      <!-- ── Contact form ── -->
+      <div>
+        <div class="card" style="padding: 2.25rem;">
+          <!-- Success message (hidden until submitted) -->
+          <div class="success-msg" id="successMsg" role="alert">
+            <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">✅</div>
+            <h2 style="font-size: 1.25rem; font-weight: 700; color: #166534; margin-bottom: 0.5rem;">Message sent!</h2>
+            <p style="color: #15803d; font-size: 0.9375rem; margin: 0;">
+              Thank you for reaching out. We'll reply to your email within one business day.
+            </p>
+          </div>
 
-      <div class="contact-box">
-        <div class="contact-box-icon" aria-hidden="true">💬</div>
-        <h3 style="font-size: 1.0625rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem;">General Enquiries</h3>
-        <p style="font-size: 0.9375rem; color: #64748b; line-height: 1.65; margin-bottom: 1rem;">
-          Questions about how BlissfulScribe works, feature availability, or anything else about the product.
-        </p>
-        <a href="mailto:contact@blissfulplan.com" style="font-size: 0.9rem; font-weight: 600; color: #2563eb;">
-          contact@blissfulplan.com
-        </a>
+          <!-- Form (hidden after successful submission) -->
+          <form
+            id="contactForm"
+            action="https://formspree.io/f/REPLACE_YOUR_FORMSPREE_ID"
+            method="POST"
+            novalidate
+          >
+            <h2 style="font-size: 1.25rem; font-weight: 700; color: #0f172a; margin: 0 0 1.5rem;">Send us a message</h2>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="firstName">First name <span aria-hidden="true" style="color:#ef4444;">*</span></label>
+                <input class="form-input" type="text" id="firstName" name="firstName" required autocomplete="given-name" placeholder="Jane" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="lastName">Last name</label>
+                <input class="form-input" type="text" id="lastName" name="lastName" autocomplete="family-name" placeholder="Smith" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="email">Email address <span aria-hidden="true" style="color:#ef4444;">*</span></label>
+              <input class="form-input" type="email" id="email" name="email" required autocomplete="email" placeholder="jane@example.com" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="subject">Subject <span aria-hidden="true" style="color:#ef4444;">*</span></label>
+              <select class="form-select" id="subject" name="subject" required>
+                <option value="" disabled selected>— Select a subject —</option>
+                <option value="General enquiry">General enquiry</option>
+                <option value="Technical support">Technical support</option>
+                <option value="Licence activation">Licence activation</option>
+                <option value="Refund request">Refund request</option>
+                <option value="Purchase question">Purchase question</option>
+                <option value="Feature request">Feature request</option>
+                <option value="Bug report">Bug report</option>
+                <option value="Business / Press">Business / Press</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div class="form-group" id="orderRefGroup" style="display:none;">
+              <label class="form-label" for="orderRef">Order reference <span style="font-weight:400; color:#6b7280;">(optional)</span></label>
+              <input class="form-input" type="text" id="orderRef" name="orderRef" placeholder="e.g. CS-12345" />
+              <p class="form-hint">Include your order ID if this relates to a purchase or refund.</p>
+            </div>
+
+            <div class="form-group" id="macosGroup" style="display:none;">
+              <label class="form-label" for="macosVersion">macOS version <span style="font-weight:400; color:#6b7280;">(optional)</span></label>
+              <input class="form-input" type="text" id="macosVersion" name="macosVersion" placeholder="e.g. macOS 15.4 Sequoia" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="message">Message <span aria-hidden="true" style="color:#ef4444;">*</span></label>
+              <textarea class="form-textarea" id="message" name="message" required placeholder="Please describe your question or issue in as much detail as possible…"></textarea>
+            </div>
+
+            <!-- Honeypot (spam protection) -->
+            <input type="text" name="_gotcha" style="display:none;" tabindex="-1" autocomplete="off" />
+            <!-- Formspree: redirect back to same page after submit (we handle it via JS instead) -->
+            <input type="hidden" name="_subject" value="BlissfulScribe Contact Form" />
+
+            <p style="font-size: 0.8125rem; color: #94a3b8; margin-bottom: 1.25rem;">
+              Fields marked <span style="color:#ef4444;">*</span> are required. We'll only use your email to respond to your message. See our <a href="/privacy/" style="color: #2563eb;">Privacy Policy</a>.
+            </p>
+
+            <button type="submit" class="submit-btn" id="submitBtn">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              Send Message
+            </button>
+          </form>
+        </div>
       </div>
 
-      <div class="contact-box">
-        <div class="contact-box-icon" aria-hidden="true">🛍️</div>
-        <h3 style="font-size: 1.0625rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem;">Purchase Support</h3>
-        <p style="font-size: 0.9375rem; color: #64748b; line-height: 1.65; margin-bottom: 1rem;">
-          Licence activation issues, refund requests, or questions about your existing purchase. Include your order reference if available.
-        </p>
-        <a href="mailto:contact@blissfulplan.com" style="font-size: 0.9rem; font-weight: 600; color: #2563eb;">
-          contact@blissfulplan.com
-        </a>
-      </div>
+      <!-- ── Info sidebar ── -->
+      <div>
 
-      <div class="contact-box">
-        <div class="contact-box-icon" aria-hidden="true">📰</div>
-        <h3 style="font-size: 1.0625rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem;">Business &amp; Press</h3>
-        <p style="font-size: 0.9375rem; color: #64748b; line-height: 1.65; margin-bottom: 1rem;">
-          Partnership proposals, press enquiries, media kit requests, or business-related questions about Blissfulplan Publishing Ltd.
-        </p>
-        <a href="mailto:contact@blissfulplan.com" style="font-size: 0.9rem; font-weight: 600; color: #2563eb;">
-          contact@blissfulplan.com
-        </a>
-      </div>
+        <!-- Response times -->
+        <div class="card" style="padding: 1.75rem; margin-bottom: 1.5rem;">
+          <h2 style="font-size: 1.0625rem; font-weight: 700; color: #0f172a; margin: 0 0 1.25rem;">What to expect</h2>
+          <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <div style="display:flex; gap: 0.875rem; align-items: flex-start;">
+              <span style="font-size:1.5rem; flex-shrink:0;" aria-hidden="true">⚡</span>
+              <div>
+                <p style="font-weight:600; color:#0f172a; font-size:0.9375rem; margin:0 0 0.2rem;">Priority support (Pro)</p>
+                <p style="font-size:0.875rem; color:#64748b; margin:0;">Same-day or next-morning reply on business days.</p>
+              </div>
+            </div>
+            <div style="display:flex; gap: 0.875rem; align-items: flex-start;">
+              <span style="font-size:1.5rem; flex-shrink:0;" aria-hidden="true">📬</span>
+              <div>
+                <p style="font-weight:600; color:#0f172a; font-size:0.9375rem; margin:0 0 0.2rem;">Standard support (Starter)</p>
+                <p style="font-size:0.875rem; color:#64748b; margin:0;">Within 1 business day, Mon–Fri, London time.</p>
+              </div>
+            </div>
+            <div style="display:flex; gap: 0.875rem; align-items: flex-start;">
+              <span style="font-size:1.5rem; flex-shrink:0;" aria-hidden="true">↩️</span>
+              <div>
+                <p style="font-weight:600; color:#0f172a; font-size:0.9375rem; margin:0 0 0.2rem;">Refunds</p>
+                <p style="font-size:0.875rem; color:#64748b; margin:0;">30-day money-back guarantee, processed within 2 business days.</p>
+              </div>
+            </div>
+          </div>
+        </div>
 
-    </div>
+        <!-- Quick answers -->
+        <div class="card" style="padding: 0; overflow: hidden;">
+          <div style="padding: 1.25rem 1.75rem; border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+            <h2 style="font-size: 1rem; font-weight: 700; color: #0f172a; margin: 0;">Common questions</h2>
+          </div>
 
-    <!-- Quick FAQ -->
-    <div style="max-width: 680px; margin: 0 auto;">
-      <h2 style="font-size: 1.5rem; font-weight: 800; color: #0f172a; letter-spacing: -0.02em; text-align: center; margin-bottom: 2rem;">
-        Quick Answers
-      </h2>
+          <div class="quick-answer">
+            <h3>How do I activate my licence?</h3>
+            <p>Open BlissfulScribe, click the menu bar icon → <em>Manage Licence</em>, and paste your licence key. You'll need an internet connection for the one-time activation step.</p>
+          </div>
 
-      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 1rem; overflow: hidden;">
+          <div class="quick-answer">
+            <h3>How do I request a refund?</h3>
+            <p>Select "Refund request" in the form to the left and include your order reference. We honour all refund requests within 30 days of purchase, no questions asked.</p>
+          </div>
 
-        <div style="padding: 1.5rem 1.75rem; border-bottom: 1px solid #e2e8f0;">
-          <h3 style="font-size: 1rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem;">How quickly do you respond?</h3>
-          <p style="font-size: 0.9375rem; color: #64748b; margin: 0; line-height: 1.6;">
-            We aim to respond to all emails within one business day (Monday to Friday, London time). During peak periods it may occasionally take up to two business days. Pro licence holders receive priority email support.
+          <div class="quick-answer">
+            <h3>What info helps with a bug report?</h3>
+            <p>Your macOS version, your BlissfulScribe version (visible in the app menu), steps to reproduce the issue, and any error messages or screenshots you can share.</p>
+          </div>
+
+          <div class="quick-answer">
+            <h3>I lost my licence key. Can you resend it?</h3>
+            <p>Yes — email us with the email address used at checkout and we'll resend your key immediately.</p>
+          </div>
+        </div>
+
+        <!-- Company note -->
+        <div style="margin-top: 1.5rem; padding: 1.25rem 1.5rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.875rem;">
+          <p style="font-size: 0.875rem; color: #94a3b8; line-height: 1.7; margin: 0; text-align: center;">
+            BlissfulScribe is a product of<br/>
+            <strong style="color: #64748b;">Blissfulplan Publishing Ltd.</strong><br/>
+            Registered in England and Wales · London, United Kingdom<br/>
+            <a href="mailto:contact@blissfulplan.com" style="color: #2563eb;">contact@blissfulplan.com</a>
           </p>
         </div>
 
-        <div style="padding: 1.5rem 1.75rem; border-bottom: 1px solid #e2e8f0;">
-          <h3 style="font-size: 1rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem;">How do I request a refund?</h3>
-          <p style="font-size: 0.9375rem; color: #64748b; margin: 0; line-height: 1.6;">
-            We offer a 30-day money-back guarantee, no questions asked. Email <a href="mailto:contact@blissfulplan.com" style="color: #2563eb;">contact@blissfulplan.com</a> with your order reference (or the email address used at checkout) and we'll process your refund promptly. See our <a href="/terms/" style="color: #2563eb;">Terms of Service</a> for full details.
-          </p>
-        </div>
-
-        <div style="padding: 1.5rem 1.75rem;">
-          <h3 style="font-size: 1rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem;">What information should I include for technical support?</h3>
-          <p style="font-size: 0.9375rem; color: #64748b; margin: 0; line-height: 1.6;">
-            To help us diagnose issues quickly, please include: your macOS version, the version of BlissfulScribe you're running (visible in the menu bar or About screen), a description of the issue, and any relevant steps to reproduce it. Screenshots or screen recordings are always helpful if the problem is visual.
-          </p>
-        </div>
-
       </div>
     </div>
-
-    <!-- Company info -->
-    <div style="text-align: center; margin-top: 3.5rem; padding-top: 2.5rem; border-top: 1px solid #e2e8f0;">
-      <p style="font-size: 0.9rem; color: #94a3b8; line-height: 1.7;">
-        BlissfulScribe is a product of <strong style="color: #64748b;">Blissfulplan Publishing Ltd.</strong><br/>
-        Registered in England and Wales · London, United Kingdom
-      </p>
-    </div>
-
   </div>
 </main>
 
@@ -209,19 +342,63 @@
 </footer>
 
 <script>
+  // Mobile menu
   const menuToggle = document.getElementById('menuToggle');
   const mobileMenu = document.getElementById('mobileMenu');
-
   menuToggle.addEventListener('click', function() {
     const isOpen = mobileMenu.classList.toggle('open');
     menuToggle.setAttribute('aria-expanded', isOpen.toString());
   });
-
   mobileMenu.querySelectorAll('a').forEach(function(link) {
     link.addEventListener('click', function() {
       mobileMenu.classList.remove('open');
       menuToggle.setAttribute('aria-expanded', 'false');
     });
+  });
+
+  // Show/hide conditional fields based on subject
+  const subjectEl = document.getElementById('subject');
+  const orderRefGroup = document.getElementById('orderRefGroup');
+  const macosGroup = document.getElementById('macosGroup');
+  subjectEl.addEventListener('change', function() {
+    const val = this.value;
+    const showOrder = ['Refund request', 'Purchase question', 'Licence activation'].includes(val);
+    const showMacos = ['Technical support', 'Bug report'].includes(val);
+    orderRefGroup.style.display = showOrder ? 'block' : 'none';
+    macosGroup.style.display = showMacos ? 'block' : 'none';
+  });
+
+  // Formspree AJAX submit (show success message without page reload)
+  const form = document.getElementById('contactForm');
+  const successMsg = document.getElementById('successMsg');
+  const submitBtn = document.getElementById('submitBtn');
+
+  form.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Sending…';
+
+    try {
+      const data = new FormData(form);
+      const response = await fetch(form.action, {
+        method: 'POST',
+        body: data,
+        headers: { 'Accept': 'application/json' }
+      });
+
+      if (response.ok) {
+        form.style.display = 'none';
+        successMsg.style.display = 'block';
+      } else {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Send Message';
+        alert('Something went wrong. Please try emailing us directly at contact@blissfulplan.com');
+      }
+    } catch (err) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Send Message';
+      alert('Something went wrong. Please try emailing us directly at contact@blissfulplan.com');
+    }
   });
 </script>
 
