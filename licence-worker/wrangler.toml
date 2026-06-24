@@ -1,0 +1,30 @@
+name = "blissfulscribe-licence"
+main = "src/index.ts"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+# ── KV Namespace ────────────────────────────────────────────────────────────
+# Run: wrangler kv:namespace create LICENCES
+# Then paste the returned id below.
+kv_namespaces = [
+  { binding = "LICENCES", id = "REPLACE_KV_NAMESPACE_ID" }
+]
+
+# ── Secrets (set via CLI — never commit values) ───────────────────────────
+# wrangler secret put STRIPE_WEBHOOK_SECRET
+# wrangler secret put RESEND_API_KEY
+# wrangler secret put WORKER_API_KEY        (random string you generate — also put in app)
+
+# ── Routes (optional: custom domain) ─────────────────────────────────────
+# routes = [{ pattern = "licence.blissfulplan.com/*", zone_name = "blissfulplan.com" }]
+
+[vars]
+ALLOWED_ORIGIN = "https://scribe.blissfulplan.com"
+STARTER_MAX_ACTIVATIONS = "1"
+PRO_MAX_ACTIVATIONS     = "3"
+STARTER_AMOUNT_CENTS    = "999"
+PRO_AMOUNT_CENTS        = "1999"
+FROM_EMAIL              = "BlissfulScribe <noreply@blissfulplan.com>"
+SUPPORT_EMAIL           = "contact@blissfulplan.com"
+PORTAL_URL              = "https://tryscribe.blissfulplan.com/portal"
+APP_NAME                = "BlissfulScribe"

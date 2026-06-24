@@ -19,7 +19,7 @@ class LicenseViewModel: ObservableObject {
     @Published private(set) var activationsLimit: Int = 0
 
     private let trialPeriodDays = 7
-    private let polarService = PolarService()
+    private let polarService = BlissfulScribeLicenceService()
     private let logger = Logger(subsystem: "com.goodtogreatmind.blissfulscribe", category: "LicenseViewModel")
     private let userDefaults = UserDefaults.standard
     private let licenseManager = LicenseManager.shared

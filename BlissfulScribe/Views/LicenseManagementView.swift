@@ -276,7 +276,11 @@ struct LicenseManagementView: View {
     }
 
     private func openLicensePortal() {
-        openURL("https://polar.sh/beingpax/portal/request")
+        let licenceService = BlissfulScribeLicenceService()
+        let key = licenseViewModel.licenseKey
+        let url = licenceService.licencePortalURL(for: key)
+            ?? URL(string: "https://tryscribe.blissfulplan.com/portal")!
+        NSWorkspace.shared.open(url)
     }
 
     private func openURL(_ urlString: String) {
