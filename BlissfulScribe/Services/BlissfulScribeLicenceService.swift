@@ -10,12 +10,11 @@ class BlissfulScribeLicenceService {
     // Replace with your actual Worker URL once deployed:
     //   wrangler deploy  →  https://blissfulscribe-licence.<account>.workers.dev
     // Or a custom route, e.g. https://licence.blissfulplan.com
-    private let baseURL = "https://blissfulscribe-licence.ACCOUNT.workers.dev"
+    private let baseURL = "https://blissfulscribe-licence.goodtogreatmind.workers.dev"
 
-    // Must match the WORKER_API_KEY secret you set with:
-    //   wrangler secret put WORKER_API_KEY
-    // Keep this obfuscated in production using the existing Obfuscator pattern.
-    private let apiKey = "REPLACE_WORKER_API_KEY"
+    // Matches WORKER_API_KEY secret set on the Cloudflare Worker.
+    // Obfuscate via Obfuscator before App Store / public distribution.
+    private let apiKey = "cd98172f9460ddf479c547538c4bcee1f090c43d7e49e87b8eb4ead1778b6af0"
 
     private let logger = Logger(subsystem: "com.goodtogreatmind.blissfulscribe",
                                 category: "LicenceService")

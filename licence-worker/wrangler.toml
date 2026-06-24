@@ -7,7 +7,7 @@ compatibility_flags = ["nodejs_compat"]
 # Run: wrangler kv:namespace create LICENCES
 # Then paste the returned id below.
 kv_namespaces = [
-  { binding = "LICENCES", id = "REPLACE_KV_NAMESPACE_ID" }
+  { binding = "LICENCES", id = "4270a89e925243838e571bf7c91aeea9" }
 ]
 
 # ── Secrets (set via CLI — never commit values) ───────────────────────────
