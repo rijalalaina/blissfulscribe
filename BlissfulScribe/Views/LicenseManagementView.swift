@@ -74,10 +74,6 @@ struct LicenseManagementView: View {
             onEmail: {
                 EmailSupport.openSupportEmail()
                 dismissReportPanel()
-            },
-            onDiscord: {
-                openURL("https://discord.gg/xryDy57nYD")
-                dismissReportPanel()
             }
         )
         .onExitCommand(perform: dismissReportPanel)
@@ -465,7 +461,6 @@ struct LicenseProMark: View {
 private struct ReportFeedbackBottomPanel: View {
     let onClose: () -> Void
     let onEmail: () -> Void
-    let onDiscord: () -> Void
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -476,7 +471,7 @@ private struct ReportFeedbackBottomPanel: View {
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
 
-                    Text("Have feedback, a bug report, or something that feels off? Send a note with system information by email, or join Discord for community discussion. Every report helps make BlissfulScribe more reliable and easier to use.")
+                    Text("Have feedback, a bug report, or something that feels off? Send a note with system information by email. Every report helps make BlissfulScribe more reliable and easier to use.")
                         .font(.callout)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
@@ -490,22 +485,13 @@ private struct ReportFeedbackBottomPanel: View {
                     .foregroundStyle(.secondary)
                     .tracking(0.6)
 
-                HStack(spacing: 10) {
-                    ReportPanelButton(
-                        title: "Email Support",
-                        systemImage: "envelope.fill",
-                        iconColor: AppTheme.Text.secondary,
-                        action: onEmail
-                    )
-
-                    ReportPanelButton(
-                        title: "Join Discord",
-                        systemImage: "bubble.left.and.bubble.right.fill",
-                        iconColor: AppTheme.Text.secondary,
-                        action: onDiscord
-                    )
-                }
-                .frame(maxWidth: 380)
+                ReportPanelButton(
+                    title: "Email Support",
+                    systemImage: "envelope.fill",
+                    iconColor: AppTheme.Text.secondary,
+                    action: onEmail
+                )
+                .frame(maxWidth: 260)
             }
             .padding(.horizontal, 24)
             .padding(.top, 28)

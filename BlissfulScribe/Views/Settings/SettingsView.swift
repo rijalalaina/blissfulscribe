@@ -15,6 +15,7 @@ struct SettingsView: View {
     @ObservedObject private var playbackController = PlaybackController.shared
     @AppStorage("hasCompletedOnboardingV2") private var hasCompletedOnboardingV2 = true
     @AppStorage("enableAnnouncements") private var enableAnnouncements = true
+    @AppStorage(AppTheme.userDefaultsKey) private var appThemeRaw = AppTheme.system.rawValue
     @AppStorage("restoreClipboardAfterPaste") private var restoreClipboardAfterPaste = true
     @AppStorage("clipboardRestoreDelay") private var clipboardRestoreDelay = 2.0
     @AppStorage(PasteMethod.userDefaultsKey) private var pasteMethodRawValue = PasteMethod.standard.rawValue
@@ -179,13 +180,22 @@ struct SettingsView: View {
             }
 
             Section("Interface") {
+                Picker("Appearance", selection: $appThemeRaw) {
+                    ForEach(AppTheme.allCases, id: \.rawValue) { theme in
+                        Text(theme.displayName).tag(theme.rawValue)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .onChange(of: appThemeRaw) { _, newValue in
+                    (AppTheme(rawValue: newValue) ?? .system).apply()
+                }
+
                 Picker("Recorder Style", selection: $recorderUIManager.recorderPanelStyle) {
                     ForEach(RecorderPanelStyle.allCases) { style in
                         Text(style.displayName).tag(style)
                     }
                 }
                 .pickerStyle(.segmented)
-
             }
 
             Section("General") {
