@@ -1,6 +1,6 @@
 import AppKit
 
-enum AppTheme: String, CaseIterable {
+enum AppAppearance: String, CaseIterable {
     case system = "system"
     case light  = "light"
     case dark   = "dark"
@@ -25,6 +25,6 @@ enum AppTheme: String, CaseIterable {
 
     static func applyStored() {
         let raw = UserDefaults.standard.string(forKey: userDefaultsKey) ?? "system"
-        (AppTheme(rawValue: raw) ?? .system).apply()
+        (AppAppearance(rawValue: raw) ?? .system).apply()
     }
 }

@@ -42,7 +42,7 @@ struct BlissfulScribeApp: App {
 
         AppDefaults.registerDefaults()
         OnboardingV2Migration.prepareIfNeeded()
-        AppTheme.applyStored()
+        AppAppearance.applyStored()
 
         let logger = Logger(subsystem: "com.goodtogreatmind.blissfulscribe", category: "Initialization")
         // Keep existing model order stable; append new models after synced entities.
