@@ -92,7 +92,7 @@ final class TranscriptionDelivery {
             return
         }
 
-        let commandText = deliverableText(from: text)
+        let commandText = text
         SoundManager.shared.playStopSound()
         await actions.dismiss()
 
