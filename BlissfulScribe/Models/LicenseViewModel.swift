@@ -6,7 +6,7 @@ import os
 class LicenseViewModel: ObservableObject {
     enum LicenseState: Equatable {
         case unlicensed
-        case trial(daysRemaining: Int)
+        case trial(remaining: Int)   // remaining = free transcriptions left
         case trialExpired
         case licensed
     }
@@ -18,7 +18,7 @@ class LicenseViewModel: ObservableObject {
     @Published var validationSuccess: Bool = false
     @Published private(set) var activationsLimit: Int = 0
 
-    private let trialPeriodDays = 7
+    static let freeTranscriptionLimit = 20
     private let polarService = BlissfulScribeLicenceService()
     private let logger = Logger(subsystem: "com.goodtogreatmind.blissfulscribe", category: "LicenseViewModel")
     private let userDefaults = UserDefaults.standard
@@ -33,34 +33,38 @@ class LicenseViewModel: ObservableObject {
     }
 
     func startTrial() {
-        let didStartTrial = licenseManager.startTrialIfNeeded()
+        licenseManager.startTrialIfNeeded()
         refreshTrialState()
         NotificationCenter.default.post(name: .licenseStatusChanged, object: nil)
+        requestLicenseCelebration()
+    }
 
-        if didStartTrial {
-            requestLicenseCelebration()
-        }
+    /// Called by TranscriptionDelivery after each successful delivery.
+    func recordTranscriptionUsed() {
+        guard !isLicensed else { return }
+        licenseManager.incrementTranscriptionsUsed()
+        refreshTrialState()
+        NotificationCenter.default.post(name: .licenseStatusChanged, object: nil)
+    }
+
+    /// Static check used by the engine to gate recording without creating a new instance.
+    static func canCurrentlyUseApp() -> Bool {
+        if LicenseManager.shared.licenseKey != nil { return true }
+        return LicenseManager.shared.transcriptionsUsed < freeTranscriptionLimit
     }
 
     private func loadLicenseState() {
-        // Check for existing license key
+        // Check for existing license key first
         if let storedLicenseKey = licenseManager.licenseKey {
             self.licenseKey = storedLicenseKey
-
-            // If we have a license key, trust that it's licensed
-            // Skip server validation on startup
             if licenseManager.activationId != nil || !userDefaults.bool(forKey: "BlissfulScribeLicenseRequiresActivation") {
                 licenseState = .licensed
                 activationsLimit = userDefaults.activationsLimit
                 return
             }
         }
-
-        if let trialStartDate = licenseManager.trialStartDate {
-            refreshTrialState(from: trialStartDate)
-        } else {
-            setUnlicensedState()
-        }
+        // Load free-transcription-based trial state
+        refreshTrialState()
     }
 
     var isLicensed: Bool {
@@ -76,21 +80,12 @@ class LicenseViewModel: ObservableObject {
     }
 
     private func refreshTrialState() {
-        guard let trialStartDate = licenseManager.trialStartDate else {
-            setUnlicensedState()
-            return
-        }
-
-        refreshTrialState(from: trialStartDate)
-    }
-
-    private func refreshTrialState(from trialStartDate: Date) {
-        let daysSinceTrialStart = Calendar.current.dateComponents([.day], from: trialStartDate, to: Date()).day ?? 0
-
-        if daysSinceTrialStart >= trialPeriodDays {
+        let used = licenseManager.transcriptionsUsed
+        let limit = LicenseViewModel.freeTranscriptionLimit
+        if used >= limit {
             licenseState = .trialExpired
         } else {
-            licenseState = .trial(daysRemaining: trialPeriodDays - daysSinceTrialStart)
+            licenseState = .trial(remaining: limit - used)
         }
     }
     
@@ -104,19 +99,12 @@ class LicenseViewModel: ObservableObject {
     }
 
     var usageRestrictionMessage: String? {
-        switch licenseState {
-        case .unlicensed, .trialExpired:
-            return String(
-                format: String(localized: "Your trial has ended. Upgrade to BlissfulScribe Pro at %@"),
-                "tryscribe.blissfulplan.com/buy"
-            )
-        case .trial, .licensed:
-            return nil
-        }
+        // No longer used for nagware — blocking is done at the recording gate.
+        return nil
     }
     
     func openPurchaseLink() {
-        if let url = URL(string: "https://tryscribe.blissfulplan.com/buy") {
+        if let url = URL(string: "https://scribe.blissfulplan.com/buy") {
             NSWorkspace.shared.open(url)
         }
     }
@@ -213,7 +201,7 @@ class LicenseViewModel: ObservableObject {
             logger.error("🔑 Unexpected license error: \(error, privacy: .public)")
             validationMessage = String(
                 format: String(localized: "An unexpected error occurred. Please try again or contact support at %@"),
-                "support@tryscribe.blissfulplan.com"
+                "support@scribe.blissfulplan.com"
             )
         }
         

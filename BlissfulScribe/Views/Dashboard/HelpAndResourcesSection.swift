@@ -12,7 +12,7 @@ struct HelpAndResourcesSection: View {
                     icon: "sparkles",
                     title: "Recommended Models",
                     color: AppTheme.Sidebar.models,
-                    url: "https://tryscribe.blissfulplan.com/recommended-models"
+                    url: "https://scribe.blissfulplan.com/recommended-models"
                 )
 
                 resourceLink(
@@ -26,7 +26,7 @@ struct HelpAndResourcesSection: View {
                     icon: "book.fill",
                     title: "Documentation",
                     color: AppTheme.Sidebar.dictionary,
-                    url: "https://tryscribe.blissfulplan.com/docs"
+                    url: "https://scribe.blissfulplan.com/docs"
                 )
                 
                 resourceLink(

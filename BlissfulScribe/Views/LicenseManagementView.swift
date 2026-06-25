@@ -225,7 +225,7 @@ struct LicenseManagementView: View {
             ResourceButton(title: "Report or Feedback", systemImage: "exclamationmark.bubble.fill", tint: neutralIconColor, action: showReportPanel)
 
             ResourceButton(title: "Docs", systemImage: "book.fill", tint: neutralIconColor) {
-                openURL("https://tryscribe.blissfulplan.com/docs")
+                openURL("https://scribe.blissfulplan.com/docs")
             }
         }
     }
@@ -239,7 +239,7 @@ struct LicenseManagementView: View {
             ResourceButton(title: "Report or Feedback", systemImage: "exclamationmark.bubble.fill", tint: neutralIconColor, action: showReportPanel)
 
             ResourceButton(title: "Docs", systemImage: "book.fill", tint: neutralIconColor) {
-                openURL("https://tryscribe.blissfulplan.com/docs")
+                openURL("https://scribe.blissfulplan.com/docs")
             }
         }
     }
@@ -250,8 +250,8 @@ struct LicenseManagementView: View {
             return String(localized: "License required")
         case .licensed:
             return String(localized: "Licensed")
-        case .trial(let daysRemaining):
-            return String(localized: "\(daysRemaining) days left in trial")
+        case .trial(let remaining):
+            return String(localized: "\(remaining) free transcription\(remaining == 1 ? "" : "s") left")
         case .trialExpired:
             return String(localized: "Trial ended")
         }
@@ -279,7 +279,7 @@ struct LicenseManagementView: View {
         let licenceService = BlissfulScribeLicenceService()
         let key = licenseViewModel.licenseKey
         let url = licenceService.licencePortalURL(for: key)
-            ?? URL(string: "https://tryscribe.blissfulplan.com/portal")!
+            ?? URL(string: "https://scribe.blissfulplan.com/portal")!
         NSWorkspace.shared.open(url)
     }
 

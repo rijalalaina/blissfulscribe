@@ -148,11 +148,14 @@ final class TranscriptionDelivery {
     }
 
     private func paste(_ text: String, output: OutputRuntimeConfiguration, actions: Actions) async {
-        let textToPaste = deliverableText(from: text)
         let appendSpace = UserDefaults.standard.bool(forKey: "AppendTrailingSpace")
-        let pastedText = textToPaste + (appendSpace ? " " : "")
+        let pastedText = text + (appendSpace ? " " : "")
         SoundManager.shared.playStopSound()
         await actions.dismiss()
+
+        // Count this delivery against the free tier (no-op when licensed)
+        LicenseManager.shared.incrementTranscriptionsUsed()
+        NotificationCenter.default.post(name: .licenseStatusChanged, object: nil)
 
         let pasteTask = CursorPaster.startPasteAtCursor(pastedText)
 
@@ -165,17 +168,5 @@ final class TranscriptionDelivery {
                 CursorPaster.performAutoSend(autoSendKey)
             }
         }
-    }
-
-    private func deliverableText(from text: String) -> String {
-        var textToDeliver = text
-        if let restrictionMessage = LicenseViewModel().usageRestrictionMessage {
-            textToDeliver = """
-                \(restrictionMessage)
-                \n\(textToDeliver)
-                """
-        }
-
-        return textToDeliver
     }
 }

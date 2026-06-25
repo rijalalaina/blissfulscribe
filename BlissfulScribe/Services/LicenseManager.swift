@@ -71,15 +71,31 @@ final class LicenseManager {
         }
     }
 
+    // MARK: - Free Transcription Counter
+
+    private let transcriptionsUsedKey = "BlissfulScribeTranscriptionsUsed"
+
+    var transcriptionsUsed: Int {
+        get { UserDefaults.standard.integer(forKey: transcriptionsUsedKey) }
+        set { UserDefaults.standard.set(newValue, forKey: transcriptionsUsedKey) }
+    }
+
+    func incrementTranscriptionsUsed() {
+        transcriptionsUsed += 1
+    }
+
+    // MARK: - License management
+
     func removeStoredLicense() {
         licenseKey = nil
         activationId = nil
     }
 
-    /// Removes all license data (for license removal/reset).
+    /// Removes all license data including trial counter.
     func removeAll() {
         licenseKey = nil
         trialStartDate = nil
         activationId = nil
+        transcriptionsUsed = 0
     }
 }

@@ -264,15 +264,15 @@ struct DashboardContent: View {
                 type: .licenseRequired,
                 onAddLicenseKey: onAddLicenseKey
             )
-        case .trial(let daysRemaining):
+        case .trial(let remaining):
             TrialMessageView(
-                message: Text(String(localized: "You have \(daysRemaining) days left in your trial")),
-                type: daysRemaining <= 2 ? .warning : .info,
+                message: Text(String(localized: "\(remaining) free transcription\(remaining == 1 ? "" : "s") remaining")),
+                type: remaining <= 3 ? .warning : .info,
                 onAddLicenseKey: onAddLicenseKey
             )
         case .trialExpired:
             TrialMessageView(
-                message: Text("Your trial has expired. Upgrade to continue using BlissfulScribe"),
+                message: Text("You've used all 20 free transcriptions. Upgrade to keep using BlissfulScribe."),
                 type: .expired,
                 onAddLicenseKey: onAddLicenseKey
             )

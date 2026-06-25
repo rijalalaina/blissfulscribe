@@ -9,8 +9,8 @@ struct DashboardPromotionsSection: View {
         switch licenseState {
         case .unlicensed:
             return true
-        case .trial(let daysRemaining):
-            return daysRemaining <= 6
+        case .trial(let remaining):
+            return remaining <= 10
         case .trialExpired:
             return true
         case .licensed:
@@ -68,13 +68,13 @@ struct DashboardPromotionsSection: View {
     }
     
     private func openSocialShare() {
-        if let url = URL(string: "https://tryscribe.blissfulplan.com/social-share") {
+        if let url = URL(string: "https://scribe.blissfulplan.com/social-share") {
             NSWorkspace.shared.open(url)
         }
     }
     
     private func openAffiliateProgram() {
-        if let url = URL(string: "https://tryscribe.blissfulplan.com/affiliate") {
+        if let url = URL(string: "https://scribe.blissfulplan.com/affiliate") {
             NSWorkspace.shared.open(url)
         }
     }

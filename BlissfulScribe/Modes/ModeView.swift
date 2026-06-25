@@ -98,7 +98,7 @@ struct ModeView: View {
                 AppScreenHeader(
                     title: "Modes",
                     infoMessage: "Modes help you set up BlissfulScribe for different writing tasks, workflows, and scenarios.",
-                    infoURL: "https://tryscribe.blissfulplan.com/docs/modes"
+                    infoURL: "https://scribe.blissfulplan.com/docs/modes"
                 ) {
                     headerControls
                 }

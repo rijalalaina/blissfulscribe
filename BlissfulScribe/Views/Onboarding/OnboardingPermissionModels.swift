@@ -90,7 +90,7 @@ enum OnboardingStage: String, CaseIterable {
         case .trust:
             return String(localized: "BlissfulScribe is private by default. No data leaves your device unless you opt in.")
         case .license:
-            return String(localized: "Activate an existing key, purchase a license, or start a 7-day free trial.")
+            return String(localized: "Activate an existing key, purchase a license, or try free for 20 transcriptions.")
         }
     }
 

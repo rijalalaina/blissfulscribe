@@ -107,6 +107,12 @@ class BlissfulScribeEngine: NSObject, ObservableObject {
             return
         }
 
+        // Gate: block new recording sessions when the free trial is exhausted
+        if recordingState == .idle, !LicenseViewModel.canCurrentlyUseApp() {
+            NotificationCenter.default.post(name: .licenseRequired, object: nil)
+            return
+        }
+
         if recordingState == .recording {
             activePipelineUseCase = activeRecordingUseCase
             activeRecordingUseCase = .newSession
