@@ -1,5 +1,6 @@
 import Foundation
 import AppKit
+import Combine
 import os
 
 @MainActor
@@ -23,9 +24,19 @@ class LicenseViewModel: ObservableObject {
     private let logger = Logger(subsystem: "com.goodtogreatmind.blissfulscribe", category: "LicenseViewModel")
     private let userDefaults = UserDefaults.standard
     private let licenseManager = LicenseManager.shared
+    private var cancellables = Set<AnyCancellable>()
 
     init() {
         loadLicenseState()
+        // Refresh trial state whenever a transcription is delivered so the
+        // dashboard counter updates in real-time without requiring a relaunch.
+        NotificationCenter.default.publisher(for: .licenseStatusChanged)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self, !self.isLicensed else { return }
+                self.refreshTrialState()
+            }
+            .store(in: &cancellables)
     }
 
     func startTrial() {
