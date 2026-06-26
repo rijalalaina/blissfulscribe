@@ -28,15 +28,6 @@ final class TranscriptionDelivery {
             return
         }
 
-        // Count every completed transcription delivery against the free tier.
-        // Runs for all output modes (paste, respond, custom command, assistant).
-        // Skipped when a valid licence key is present.
-        if LicenseManager.shared.licenseKey == nil {
-            LicenseManager.shared.incrementTranscriptionsUsed()
-            UserDefaults.standard.synchronize()
-            NotificationCenter.default.post(name: .licenseStatusChanged, object: nil)
-        }
-
         if request.isAssistantFollowUp {
             await deliverFollowUp(request, actions: actions)
             return

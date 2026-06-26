@@ -28,8 +28,23 @@ class LicenseViewModel: ObservableObject {
 
     init() {
         loadLicenseState()
-        // Refresh trial state whenever a transcription is delivered so the
-        // dashboard counter updates in real-time without requiring a relaunch.
+
+        // Count every successfully completed transcription against the free tier.
+        // .transcriptionCompleted is posted by TranscriptionPipeline for every
+        // transcription regardless of output mode (paste, respond, custom command).
+        NotificationCenter.default.publisher(for: .transcriptionCompleted)
+            .receive(on: DispatchQueue.main)
+            .compactMap { $0.object as? Transcription }
+            .filter { $0.transcriptionStatus == TranscriptionStatus.completed.rawValue }
+            .sink { [weak self] _ in
+                guard let self, !self.isLicensed else { return }
+                self.licenseManager.incrementTranscriptionsUsed()
+                UserDefaults.standard.synchronize()
+                self.refreshTrialState()
+            }
+            .store(in: &cancellables)
+
+        // Also refresh state on explicit license change events.
         NotificationCenter.default.publisher(for: .licenseStatusChanged)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
