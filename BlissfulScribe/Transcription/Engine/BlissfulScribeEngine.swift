@@ -619,6 +619,23 @@ class BlissfulScribeEngine: NSObject, ObservableObject {
             name: .promptDidChange,
             object: nil
         )
+        // Count completed transcriptions for the free trial from the engine
+        // level — always alive regardless of which views are on screen.
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleTranscriptionCompleted(_:)),
+            name: .transcriptionCompleted,
+            object: nil
+        )
+    }
+
+    @objc func handleTranscriptionCompleted(_ notification: Notification) {
+        guard let transcription = notification.object as? Transcription,
+              transcription.transcriptionStatus == TranscriptionStatus.completed.rawValue,
+              LicenseManager.shared.licenseKey == nil else { return }
+        LicenseManager.shared.incrementTranscriptionsUsed()
+        UserDefaults.standard.synchronize()
+        NotificationCenter.default.post(name: .licenseStatusChanged, object: nil)
     }
 
     @objc func handlePromptChange() {
