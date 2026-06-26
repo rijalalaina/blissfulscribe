@@ -230,6 +230,16 @@ class TranscriptionPipeline {
 
         func saveTranscriptionAndPostCompletion() {
             if transcription.transcriptionStatus == TranscriptionStatus.completed.rawValue {
+                // Count this completed transcription toward the free trial.
+                // Done here — the single guaranteed completion point — rather
+                // than via notification observers (unreliable across view lifecycles).
+                if LicenseManager.shared.licenseKey == nil {
+                    LicenseManager.shared.incrementTranscriptionsUsed()
+                    UserDefaults.standard.synchronize()
+                    logger.notice("🔢 Free transcription counted: now \(LicenseManager.shared.transcriptionsUsed, privacy: .public)/\(LicenseViewModel.freeTranscriptionLimit, privacy: .public)")
+                    NotificationCenter.default.post(name: .licenseStatusChanged, object: nil)
+                }
+
                 do {
                     didInsertSessionMetric = try SessionMetricRecorder.recordRecorderSession(
                         transcription: transcription,
