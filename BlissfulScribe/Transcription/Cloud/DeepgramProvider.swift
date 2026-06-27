@@ -44,7 +44,14 @@ struct DeepgramProvider: CloudProvider {
             audioData: audioData,
             apiKey: apiKey,
             model: model,
-            language: language
+            language: language,
+            smartFormat: true,
+            punctuate: true,
+            paragraphs: true,
+            customVocabulary: customVocabulary,
+            // Raw binary upload (no base64) — scales timeout with file size.
+            // 90 s base + 30 s per 5 MB, capped at 300 s.
+            timeout: min(300, 90 + Double(audioData.count / 5_000_000) * 30)
         )
     }
 
