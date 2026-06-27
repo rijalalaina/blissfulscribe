@@ -24,12 +24,14 @@ enum ModeOutputMode: String, Codable, CaseIterable {
     case paste
     case respond
     case customCommand
+    case webhook
 
     var displayName: String {
         switch self {
         case .paste: return String(localized: "Paste")
         case .respond: return String(localized: "Respond")
         case .customCommand: return String(localized: "Custom Command")
+        case .webhook: return String(localized: "Webhook")
         }
     }
 
@@ -38,6 +40,7 @@ enum ModeOutputMode: String, Codable, CaseIterable {
         case .paste: return "doc.on.clipboard"
         case .respond: return "text.bubble"
         case .customCommand: return "terminal"
+        case .webhook: return "arrow.up.forward.app"
         }
     }
 
@@ -46,7 +49,23 @@ enum ModeOutputMode: String, Codable, CaseIterable {
     }
 
     static func choices(canRespond: Bool) -> [ModeOutputMode] {
-        canRespond ? [.paste, .respond, .customCommand] : [.paste, .customCommand]
+        canRespond ? [.paste, .respond, .customCommand, .webhook] : [.paste, .customCommand, .webhook]
+    }
+}
+
+struct ModeWebhook: Codable, Equatable {
+    var url: String
+    var includeMetadata: Bool
+
+    init(url: String = "", includeMetadata: Bool = false) {
+        self.url = url
+        self.includeMetadata = includeMetadata
+    }
+
+    var trimmedURL: URL? {
+        guard let u = URL(string: url.trimmingCharacters(in: .whitespacesAndNewlines)),
+              u.scheme == "https" || u.scheme == "http" else { return nil }
+        return u
     }
 }
 
@@ -96,11 +115,13 @@ struct ModeConfig: Codable, Identifiable, Equatable {
     var outputMode: ModeOutputMode = .paste
     var autoSendKey: AutoSendKey = .none
     var customCommand: ModeCustomCommand?
+    var webhook: ModeWebhook?
+    var fallbackTranscriptionModelNames: [String]
     var isEnabled: Bool = true
     var isDefault: Bool = false
 
     enum CodingKeys: String, CodingKey {
-        case id, name, icon, appConfigs, urlConfigs, triggerGroups, triggerWords, isAIEnhancementEnabled, selectedPrompt, isRealtimeTranscriptionEnabled, selectedLanguage, isTextFormattingEnabled, useClipboardContext, useSelectedTextContext, useScreenCapture, selectedAIProvider, selectedAIModel, outputMode, isAutoSendEnabled, autoSendKey, customCommand, isEnabled, isDefault
+        case id, name, icon, appConfigs, urlConfigs, triggerGroups, triggerWords, isAIEnhancementEnabled, selectedPrompt, isRealtimeTranscriptionEnabled, selectedLanguage, isTextFormattingEnabled, useClipboardContext, useSelectedTextContext, useScreenCapture, selectedAIProvider, selectedAIModel, outputMode, isAutoSendEnabled, autoSendKey, customCommand, webhook, fallbackTranscriptionModelNames, isEnabled, isDefault
         case legacyEmoji = "emoji"
         case selectedWhisperModel
         case selectedTranscriptionModelName
@@ -110,7 +131,7 @@ struct ModeConfig: Codable, Identifiable, Equatable {
          urlConfigs: [URLConfig]? = nil, triggerGroups: [ModeTriggerGroup]? = nil, triggerWords: [String] = [],
          isAIEnhancementEnabled: Bool, selectedPrompt: String? = nil,
          selectedTranscriptionModelName: String? = nil, isRealtimeTranscriptionEnabled: Bool = true, selectedLanguage: String? = nil, useClipboardContext: Bool = false, useSelectedTextContext: Bool = true, useScreenCapture: Bool = false,
-         isTextFormattingEnabled: Bool = false, selectedAIProvider: String? = nil, selectedAIModel: String? = nil, outputMode: ModeOutputMode = .paste, autoSendKey: AutoSendKey = .none, customCommand: ModeCustomCommand? = nil, isEnabled: Bool = true, isDefault: Bool = false) {
+         isTextFormattingEnabled: Bool = false, selectedAIProvider: String? = nil, selectedAIModel: String? = nil, outputMode: ModeOutputMode = .paste, autoSendKey: AutoSendKey = .none, customCommand: ModeCustomCommand? = nil, fallbackTranscriptionModelNames: [String] = [], isEnabled: Bool = true, isDefault: Bool = false) {
         self.id = id
         self.name = name
         self.icon = icon
@@ -126,6 +147,7 @@ struct ModeConfig: Codable, Identifiable, Equatable {
         self.autoSendKey = autoSendKey
         self.outputMode = outputMode
         self.customCommand = customCommand
+        self.fallbackTranscriptionModelNames = fallbackTranscriptionModelNames
         self.selectedAIProvider = selectedAIProvider
         self.selectedAIModel = selectedAIModel
         self.selectedTranscriptionModelName = selectedTranscriptionModelName
@@ -181,6 +203,8 @@ struct ModeConfig: Codable, Identifiable, Equatable {
         selectedAIModel = try container.decodeIfPresent(String.self, forKey: .selectedAIModel)
         outputMode = try container.decodeIfPresent(ModeOutputMode.self, forKey: .outputMode) ?? .paste
         customCommand = try container.decodeIfPresent(ModeCustomCommand.self, forKey: .customCommand)
+        webhook = try container.decodeIfPresent(ModeWebhook.self, forKey: .webhook)
+        fallbackTranscriptionModelNames = try container.decodeIfPresent([String].self, forKey: .fallbackTranscriptionModelNames) ?? []
         // Migrate from old isAutoSendEnabled bool to new autoSendKey enum
         if let rawValue = try container.decodeIfPresent(String.self, forKey: .autoSendKey),
            let newKey = AutoSendKey(rawValue: rawValue) {
@@ -224,6 +248,10 @@ struct ModeConfig: Codable, Identifiable, Equatable {
         try container.encode(outputMode, forKey: .outputMode)
         try container.encode(autoSendKey, forKey: .autoSendKey)
         try container.encodeIfPresent(customCommand, forKey: .customCommand)
+        try container.encodeIfPresent(webhook, forKey: .webhook)
+        if !fallbackTranscriptionModelNames.isEmpty {
+            try container.encode(fallbackTranscriptionModelNames, forKey: .fallbackTranscriptionModelNames)
+        }
         try container.encodeIfPresent(selectedTranscriptionModelName, forKey: .selectedTranscriptionModelName)
         try container.encode(isEnabled, forKey: .isEnabled)
         try container.encode(isDefault, forKey: .isDefault)

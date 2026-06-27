@@ -44,10 +44,61 @@ final class TranscriptionDelivery {
             return
         }
 
+        if request.output.outputMode == .webhook {
+            await deliverWebhook(request, actions: actions)
+            return
+        }
+
         if let text = request.text {
             await paste(text, output: request.output, actions: actions)
         } else {
             await actions.dismiss()
+        }
+    }
+
+    private func deliverWebhook(_ item: Request, actions: Actions) async {
+        guard let text = item.text, !text.isEmpty else {
+            SoundManager.shared.playStopSound()
+            await actions.dismiss()
+            return
+        }
+
+        guard let webhook = item.output.webhook, let url = webhook.trimmedURL else {
+            logger.error("Webhook delivery: no valid URL configured")
+            SoundManager.shared.playStopSound()
+            await actions.dismiss()
+            return
+        }
+
+        SoundManager.shared.playStopSound()
+        await actions.dismiss()
+
+        Task {
+            var payload: [String: Any] = ["transcript": text]
+            if webhook.includeMetadata {
+                payload["model"] = item.transcription.transcriptionModelName ?? ""
+                payload["enhanced"] = item.transcription.enhancedText ?? ""
+                payload["duration"] = item.transcription.duration
+                payload["timestamp"] = ISO8601DateFormatter().string(from: item.transcription.createdAt ?? Date())
+            }
+
+            do {
+                let body = try JSONSerialization.data(withJSONObject: payload)
+                var req = URLRequest(url: url)
+                req.httpMethod = "POST"
+                req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                req.setValue("BlissfulScribe/2.0", forHTTPHeaderField: "User-Agent")
+                req.httpBody = body
+                req.timeoutInterval = 15
+
+                let (_, response) = try await URLSession.shared.data(for: req)
+                let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+                if status < 200 || status >= 300 {
+                    logger.error("Webhook returned HTTP \(status, privacy: .public) for \(url.host ?? "?", privacy: .public)")
+                }
+            } catch {
+                logger.error("Webhook delivery error: \(error, privacy: .public)")
+            }
         }
     }
 

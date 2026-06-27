@@ -543,6 +543,10 @@ struct ModeConfigFormView: View {
             if draft.outputMode == .customCommand {
                 customCommandControls
             }
+
+            if draft.outputMode == .webhook {
+                webhookControls
+            }
         }
     }
 
@@ -594,6 +598,23 @@ struct ModeConfigFormView: View {
                 .fixedSize()
             }
 
+        }
+    }
+
+    private var webhookControls: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 6) {
+                Text("Webhook URL")
+                InfoTip(LocalizedStringKey("BlissfulScribe POSTs the transcript as JSON to this URL after each recording. Use HTTPS for security."))
+            }
+
+            TextField("https://example.com/webhook", text: $draft.webhookURL)
+                .textFieldStyle(.roundedBorder)
+                .autocorrectionDisabled()
+
+            Toggle("Include metadata (model, duration, timestamp)", isOn: $draft.webhookIncludeMetadata)
+                .font(.subheadline)
+                .toggleStyle(.checkbox)
         }
     }
 

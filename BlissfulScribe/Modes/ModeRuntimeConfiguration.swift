@@ -55,6 +55,7 @@ struct OutputRuntimeConfiguration {
     let outputMode: ModeOutputMode
     let autoSendKey: AutoSendKey
     let customCommand: ModeCustomCommand?
+    let webhook: ModeWebhook?
 }
 
 @MainActor
@@ -133,7 +134,8 @@ enum ModeRuntimeResolver {
             mode: mode,
             outputMode: mode?.outputMode ?? .paste,
             autoSendKey: mode?.autoSendKey ?? .none,
-            customCommand: mode?.customCommand
+            customCommand: mode?.customCommand,
+            webhook: mode?.webhook
         )
     }
 

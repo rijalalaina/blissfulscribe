@@ -27,15 +27,18 @@ class TranscriptionPipeline {
     private let enhancementService: AIEnhancementService?
     private let delivery = TranscriptionDelivery()
     private let logger = Logger(subsystem: "com.goodtogreatmind.blissfulscribe", category: "TranscriptionPipeline")
+    private weak var transcriptionModelManager: TranscriptionModelManager?
 
     init(
         modelContext: ModelContext,
         serviceRegistry: TranscriptionServiceRegistry,
-        enhancementService: AIEnhancementService?
+        enhancementService: AIEnhancementService?,
+        transcriptionModelManager: TranscriptionModelManager? = nil
     ) {
         self.modelContext = modelContext
         self.serviceRegistry = serviceRegistry
         self.enhancementService = enhancementService
+        self.transcriptionModelManager = transcriptionModelManager
     }
 
     /// Run the full pipeline for a given transcription record.
@@ -105,11 +108,35 @@ class TranscriptionPipeline {
             if let session {
                 text = try await session.transcribe(audioURL: audioURL)
             } else {
-                text = try await serviceRegistry.transcribe(
-                    audioURL: audioURL,
-                    model: model,
-                    context: transcriptionConfiguration.requestContext
-                )
+                // Primary transcription attempt; retry with fallback models on failure.
+                var lastError: Error?
+                var transcribed = false
+                let fallbackNames = transcriptionConfiguration.mode?.fallbackTranscriptionModelNames ?? []
+                let allAvailable = await MainActor.run { self.transcriptionModelManager?.usableModels ?? [] }
+                let modelsToTry: [any TranscriptionModel] = [model] + fallbackNames.compactMap { name in
+                    allAvailable.first { $0.name == name }
+                }
+
+                text = ""
+                for candidate in modelsToTry {
+                    guard let candidate else { continue }
+                    do {
+                        text = try await serviceRegistry.transcribe(
+                            audioURL: audioURL,
+                            model: candidate,
+                            context: transcriptionConfiguration.requestContext
+                        )
+                        if candidate.name != model.name {
+                            logger.notice("Failover: transcribed with \(candidate.displayName, privacy: .public) after primary failed")
+                        }
+                        transcribed = true
+                        break
+                    } catch {
+                        lastError = error
+                        logger.warning("Transcription failed with \(candidate.displayName, privacy: .public): \(error, privacy: .public)")
+                    }
+                }
+                if !transcribed { throw lastError ?? TranscriptionError.noModelSelected }
             }
             text = TranscriptionOutputFilter.filter(text)
             let transcriptionDuration = Date().timeIntervalSince(transcriptionStart)

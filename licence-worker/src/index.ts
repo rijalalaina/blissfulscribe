@@ -459,6 +459,48 @@ async function handleActivate(request: Request, env: Env): Promise<Response> {
   record.activations.push(activation);
   await putLicence(env.LICENCES, record);
 
+  // Send confirmation email (fire-and-forget; don't block the response)
+  if (record.email) {
+    const productLabel = record.product === "pro"
+      ? `Pro (${record.maxActivations} Macs)`
+      : `Starter (${record.maxActivations} Mac)`;
+    const confirmHtml = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+<style>body{font-family:-apple-system,sans-serif;background:#f8fafc;margin:0;padding:0;color:#0f172a}
+.wrap{max-width:520px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.hdr{background:linear-gradient(135deg,#2563eb,#0d9488);padding:28px 32px;text-align:center}
+.hdr h1{margin:0;color:#fff;font-size:20px;font-weight:700}
+.body{padding:28px 32px}
+.info{background:#f0fdf4;border-left:4px solid #22c55e;border-radius:8px;padding:14px 16px;margin:16px 0}
+.footer{background:#f8fafc;padding:16px 32px;text-align:center;color:#94a3b8;font-size:13px;border-top:1px solid #e2e8f0}
+a{color:#2563eb}</style></head><body>
+<div class="wrap">
+  <div class="hdr"><h1>✅ BlissfulScribe is now activated</h1></div>
+  <div class="body">
+    <p>Your <strong>${productLabel}</strong> licence was successfully activated on <strong>${deviceName}</strong>.</p>
+    <div class="info">
+      <strong>Licence key:</strong> <code>${record.key}</code><br>
+      <strong>Device:</strong> ${deviceName}<br>
+      <strong>Activations used:</strong> ${record.activations.length} / ${record.maxActivations}
+    </div>
+    <p style="color:#64748b;font-size:14px">Need to switch to a new Mac or manage your activations?
+      <a href="${env.PORTAL_URL}?key=${record.key}">Visit the licence portal</a>.</p>
+    <p style="color:#64748b;font-size:14px">Questions? <a href="mailto:${env.SUPPORT_EMAIL}">${env.SUPPORT_EMAIL}</a></p>
+  </div>
+  <div class="footer">Blissfulplan Publishing Ltd. · London, UK</div>
+</div></body></html>`;
+
+    fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: env.FROM_EMAIL,
+        to: record.email,
+        subject: `BlissfulScribe activated on ${deviceName}`,
+        html: confirmHtml,
+      }),
+    }).catch((e) => console.error("Activation email error:", e));
+  }
+
   return json({ activationId: activation.id, maxActivations: record.maxActivations });
 }
 
@@ -513,6 +555,136 @@ async function handlePortal(request: Request, env: Env): Promise<Response> {
   return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
 }
 
+// ── Trial drip email system ──────────────────────────────────────────────────
+
+interface TrialRecord {
+  email: string;
+  startedAt: string;   // ISO timestamp
+  sentDays: number[];  // e.g. [2, 5] — which day emails have already been sent
+}
+
+/** POST /trial-start — App calls this when user starts the free trial */
+async function handleTrialStart(request: Request, env: Env): Promise<Response> {
+  const apiKey = request.headers.get("X-API-Key") ?? "";
+  if (!(await safeEqual(apiKey, env.WORKER_API_KEY))) return err("Unauthorised", 401);
+
+  const body = await request.json() as { email?: string };
+  const email = body.email?.trim().toLowerCase();
+  if (!email || !email.includes("@")) return err("Valid email required", 400);
+
+  // Idempotent: don't overwrite if already registered
+  const existing = await env.LICENCES.get(`trial:${email}`);
+  if (!existing) {
+    const record: TrialRecord = { email, startedAt: new Date().toISOString(), sentDays: [] };
+    await env.LICENCES.put(`trial:${email}`, JSON.stringify(record), {
+      expirationTtl: 60 * 60 * 24 * 60, // auto-expire after 60 days
+    });
+    console.log(`Trial started for ${email}`);
+  }
+  return json({ ok: true });
+}
+
+/** Sends a drip email. Returns true on success. */
+async function sendDripEmail(
+  env: Env,
+  email: string,
+  day: number
+): Promise<boolean> {
+  const subjects: Record<number, string> = {
+    2: "3 tips to get more out of BlissfulScribe",
+    5: `You have ${20 - (await (async () => 0)())} free transcriptions left`,
+    7: "Your BlissfulScribe free trial is ending soon",
+  };
+  const bodies: Record<number, string> = {
+    2: `<p>Hi there,</p>
+<p>You started your BlissfulScribe free trial a couple of days ago. Here are three tips to get the most out of it:</p>
+<ol>
+<li><strong>Set a global hotkey</strong> — go to Settings → Shortcuts and bind a key. One press to start, one to stop.</li>
+<li><strong>Try AI Enhancement</strong> — go to AI Models, connect an API key (OpenAI or Gemini), then enable Enhancement in your Mode. It cleans up filler words and fixes grammar automatically.</li>
+<li><strong>Use Modes</strong> — create different profiles for writing, coding, or emails. Each can use a different transcription model and enhancement style.</li>
+</ol>
+<p>Questions? Reply to this email — we read every message.</p>`,
+    5: `<p>Hi there,</p>
+<p>You're over halfway through your BlissfulScribe free trial. We hope it's been useful!</p>
+<p>If you've found BlissfulScribe valuable, now is a great time to pick up a licence before your trial ends. You'll keep all your history, modes, and settings — nothing resets.</p>
+<ul>
+<li><strong>Starter</strong> — $9.99 one-time, 1 Mac, lifetime updates</li>
+<li><strong>Pro</strong> — $19.99 one-time, 3 Macs, priority support</li>
+</ul>
+<div style="text-align:center;margin:24px 0"><a href="https://scribe.blissfulplan.com/#pricing" style="background:linear-gradient(135deg,#2563eb,#0d9488);color:#fff;padding:12px 28px;border-radius:9px;text-decoration:none;font-weight:600">View Pricing →</a></div>`,
+    7: `<p>Hi there,</p>
+<p>Your BlissfulScribe free trial is ending today. Once your 20 free transcriptions are used up, recording will pause until you activate a licence.</p>
+<p>Upgrade now to keep your workflow uninterrupted:</p>
+<div style="text-align:center;margin:24px 0"><a href="https://scribe.blissfulplan.com/#pricing" style="background:linear-gradient(135deg,#2563eb,#0d9488);color:#fff;padding:12px 28px;border-radius:9px;text-decoration:none;font-weight:600">Upgrade BlissfulScribe →</a></div>
+<p style="color:#64748b;font-size:14px">30-day money-back guarantee · One-time payment · No subscription</p>`,
+  };
+
+  const subject = subjects[day] ?? `Day ${day} — BlissfulScribe`;
+  const body = bodies[day] ?? "<p>Thank you for trying BlissfulScribe.</p>";
+
+  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+<style>body{font-family:-apple-system,sans-serif;background:#f8fafc;margin:0;color:#0f172a}
+.wrap{max-width:520px;margin:32px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.08)}
+.hdr{background:linear-gradient(135deg,#2563eb,#0d9488);padding:20px 28px}
+.hdr strong{color:#fff;font-size:18px;font-weight:700}
+.body{padding:24px 28px;line-height:1.65}ol,ul{padding-left:20px}li{margin:6px 0}
+.footer{background:#f8fafc;padding:14px 28px;text-align:center;color:#94a3b8;font-size:12px;border-top:1px solid #e2e8f0}
+a{color:#2563eb}</style></head><body>
+<div class="wrap">
+  <div class="hdr"><strong>BlissfulScribe</strong></div>
+  <div class="body">${body}
+    <p style="margin-top:24px;color:#64748b;font-size:13px">— The Blissfulplan Team<br>
+    <a href="mailto:${env.SUPPORT_EMAIL}">${env.SUPPORT_EMAIL}</a></p>
+  </div>
+  <div class="footer">Blissfulplan Publishing Ltd. · London, UK<br>
+  <a href="https://scribe.blissfulplan.com/unsubscribe?email=${encodeURIComponent(email)}">Unsubscribe</a></div>
+</div></body></html>`;
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ from: env.FROM_EMAIL, to: email, subject, html }),
+  });
+  return res.ok;
+}
+
+/** Scheduled handler — runs daily via Cloudflare Cron.
+ *  Iterates trial records and sends Day 2 / 5 / 7 drip emails. */
+async function handleScheduled(env: Env): Promise<void> {
+  const drip = [2, 5, 7];
+  const list = await env.LICENCES.list({ prefix: "trial:" });
+
+  for (const key of list.keys) {
+    const raw = await env.LICENCES.get(key.name);
+    if (!raw) continue;
+
+    let record: TrialRecord;
+    try { record = JSON.parse(raw); } catch { continue; }
+
+    // Skip if already purchased a licence
+    const hasPurchased = !!(await env.LICENCES.get(`licensed:${record.email}`));
+    if (hasPurchased) continue;
+
+    const daysSinceStart = Math.floor(
+      (Date.now() - new Date(record.startedAt).getTime()) / (1000 * 60 * 60 * 24)
+    );
+
+    for (const day of drip) {
+      if (daysSinceStart >= day && !record.sentDays.includes(day)) {
+        const ok = await sendDripEmail(env, record.email, day);
+        if (ok) {
+          record.sentDays.push(day);
+          await env.LICENCES.put(key.name, JSON.stringify(record), {
+            expirationTtl: 60 * 60 * 24 * 60,
+          });
+          console.log(`Drip day ${day} sent to ${record.email}`);
+        }
+        break; // send at most one email per run per user
+      }
+    }
+  }
+}
+
 // ── Main fetch handler ───────────────────────────────────────────────────────
 
 export default {
@@ -537,11 +709,16 @@ export default {
       if (url.pathname === "/activate" && method === "POST") return handleActivate(request, env);
       if (url.pathname === "/deactivate") return handleDeactivate(request, env);
       if (url.pathname === "/portal" && method === "GET") return handlePortal(request, env);
+      if (url.pathname === "/trial-start" && method === "POST") return handleTrialStart(request, env);
       if (url.pathname === "/health" && method === "GET") return new Response("OK");
       return err("Not found", 404);
     } catch (e) {
       console.error("Unhandled error:", e);
       return err("Internal server error", 500);
     }
+  },
+
+  async scheduled(_event: ScheduledEvent, env: Env, _ctx: ExecutionContext): Promise<void> {
+    await handleScheduled(env);
   },
 };

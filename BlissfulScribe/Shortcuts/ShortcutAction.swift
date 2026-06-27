@@ -3,6 +3,7 @@ import Foundation
 enum ShortcutAction: Hashable {
     case primaryRecording
     case secondaryRecording
+    case copyLastTranscription
     case pasteLastTranscription
     case pasteLastEnhancement
     case retryLastTranscription
@@ -32,6 +33,8 @@ enum ShortcutAction: Hashable {
             return "primaryRecording"
         case .secondaryRecording:
             return "secondaryRecording"
+        case .copyLastTranscription:
+            return "copyLastTranscription"
         case .pasteLastTranscription:
             return "pasteLastTranscription"
         case .pasteLastEnhancement:
@@ -59,6 +62,8 @@ enum ShortcutAction: Hashable {
             return String(localized: "Primary Shortcut")
         case .secondaryRecording:
             return String(localized: "Secondary Shortcut")
+        case .copyLastTranscription:
+            return String(localized: "Copy Last Transcription")
         case .pasteLastTranscription:
             return String(localized: "Paste Last Transcription")
         case .pasteLastEnhancement:
@@ -89,6 +94,7 @@ enum ShortcutAction: Hashable {
     }
 
     static let globalUtilityActions: [Self] = [
+        .copyLastTranscription,
         .pasteLastTranscription,
         .pasteLastEnhancement,
         .retryLastTranscription,

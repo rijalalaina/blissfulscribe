@@ -139,4 +139,13 @@ class BlissfulScribeLicenceService {
         let encoded = key.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? key
         return URL(string: "\(baseURL)/portal?key=\(encoded)")
     }
+
+    /// Register the user's email for the trial drip sequence.
+    /// Fire-and-forget — errors are silently ignored.
+    func registerTrialEmail(_ email: String) {
+        guard !email.isEmpty else { return }
+        struct TrialStartBody: Encodable { let email: String }
+        guard let req = try? makeRequest(path: "/trial-start", body: TrialStartBody(email: email)) else { return }
+        Task { try? await URLSession.shared.data(for: req) }
+    }
 }

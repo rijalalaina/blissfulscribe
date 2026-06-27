@@ -23,6 +23,8 @@ struct ModeConfigDraft {
     var autoSendKey: AutoSendKey
     var customCommand: String
     var customCommandTimeout: TimeInterval
+    var webhookURL: String
+    var webhookIncludeMetadata: Bool
     var isDefault: Bool
     var isTranscriptionFormattingExpanded: Bool
 
@@ -55,6 +57,8 @@ struct ModeConfigDraft {
             autoSendKey = .none
             customCommand = inheritedConfig?.customCommand?.command ?? ""
             customCommandTimeout = inheritedConfig?.customCommand?.timeout ?? 10
+            webhookURL = inheritedConfig?.webhook?.url ?? ""
+            webhookIncludeMetadata = inheritedConfig?.webhook?.includeMetadata ?? false
             isDefault = false
             isTranscriptionFormattingExpanded = false
             sourceConfig = nil
@@ -83,6 +87,8 @@ struct ModeConfigDraft {
             autoSendKey = latestConfig.autoSendKey
             customCommand = latestConfig.customCommand?.command ?? ""
             customCommandTimeout = latestConfig.customCommand?.timeout ?? 10
+            webhookURL = latestConfig.webhook?.url ?? ""
+            webhookIncludeMetadata = latestConfig.webhook?.includeMetadata ?? false
             isDefault = latestConfig.isDefault
             isTranscriptionFormattingExpanded = false
             sourceConfig = latestConfig
@@ -160,6 +166,7 @@ struct ModeConfigDraft {
         let savedAutoSendKey: AutoSendKey = outputMode.usesPasteOptions ? autoSendKey : .none
         let savedIsDefault = outputMode.usesPasteOptions ? isDefault : false
         let savedCustomCommand = makeCustomCommand()
+        let savedWebhook = makeWebhook()
 
         switch mode {
         case .add:
@@ -210,6 +217,7 @@ struct ModeConfigDraft {
             updatedConfig.outputMode = outputMode
             updatedConfig.autoSendKey = savedAutoSendKey
             updatedConfig.customCommand = savedCustomCommand
+            updatedConfig.webhook = savedWebhook
             updatedConfig.isDefault = savedIsDefault
             return updatedConfig
         }
@@ -218,5 +226,10 @@ struct ModeConfigDraft {
     private func makeCustomCommand() -> ModeCustomCommand? {
         let command = ModeCustomCommand(command: customCommand, timeout: customCommandTimeout)
         return command.trimmedCommand == nil ? nil : command
+    }
+
+    private func makeWebhook() -> ModeWebhook? {
+        let wh = ModeWebhook(url: webhookURL, includeMetadata: webhookIncludeMetadata)
+        return wh.trimmedURL == nil ? nil : wh
     }
 }
