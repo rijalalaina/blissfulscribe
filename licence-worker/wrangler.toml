@@ -18,7 +18,7 @@ kv_namespaces = [
 # ── Routes (optional: custom domain) ─────────────────────────────────────
 # routes = [{ pattern = "licence.blissfulplan.com/*", zone_name = "blissfulplan.com" }]
 
-[[triggers]]
+[triggers]
 crons = ["0 10 * * *"]   # run daily at 10:00 UTC to process drip queue
 
 [vars]
