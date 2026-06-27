@@ -380,7 +380,7 @@ struct BlissfulScribeApp: App {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             AnnouncementManager.shared.showAnnouncement(
                 title: "What's New in BlissfulScribe \(currentVersion)",
-                description: "• 20 free transcriptions included — no sign-up required\n• Light / Dark / System appearance setting\n• File upload now counts toward the free trial\n• Improved licence activation and paywall",
+                description: "• Webhook output mode — POST transcripts to Zapier, Make, or any URL\n• Provider failover — automatic retry with backup transcription model\n• Copy Last Transcription global shortcut\n• Siri / Shortcuts: Switch Mode & Get Last Transcription\n• Activation confirmation email on new device",
                 learnMoreURL: URL(string: "https://scribe.blissfulplan.com/blog/"),
                 onDismiss: {}
             )
