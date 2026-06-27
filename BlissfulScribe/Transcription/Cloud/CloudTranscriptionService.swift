@@ -12,6 +12,14 @@ enum CloudTranscriptionError: Error, LocalizedError {
     case noTranscriptionReturned
     case dataEncodingError
 
+    var isTimeout: Bool {
+        if case .networkError(let e) = self {
+            return e.localizedDescription.lowercased().contains("timed out") ||
+                   (e as? URLError)?.code == .timedOut
+        }
+        return false
+    }
+
     var errorDescription: String? {
         switch self {
         case .unsupportedProvider:
@@ -25,7 +33,11 @@ enum CloudTranscriptionError: Error, LocalizedError {
         case .apiRequestFailed(let statusCode, let message):
             return String(format: String(localized: "The API request failed with status code %lld: %@"), Int64(statusCode), message)
         case .networkError(let error):
-            return String(format: String(localized: "A network error occurred: %@"), error.localizedDescription)
+            let desc = error.localizedDescription
+            if desc.lowercased().contains("timed out") || (error as? URLError)?.code == .timedOut {
+                return String(localized: "The request timed out. For long audio files (>10 min), try Groq (Whisper Large v3 Turbo) — it handles large files faster. Make sure you have a Groq API key in AI Models.")
+            }
+            return String(format: String(localized: "A network error occurred: %@"), desc)
         case .noTranscriptionReturned:
             return String(localized: "The API returned an empty or invalid response.")
         case .dataEncodingError:

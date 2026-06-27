@@ -166,6 +166,19 @@ class AudioTranscriptionManager: ObservableObject {
             // Phase: Transcribing
             item.status = .processing(phase: .transcribing)
             let transcriptionStart = Date()
+
+            // Smart provider selection: for long files (>5 min / >20 MB WAV) prefer Groq
+            // (fast multipart upload, 25 MB limit) or fall back through the configured model.
+            let permanentFileSize = (try? FileManager.default.attributesOfItem(atPath: permanentURL.path)[.size] as? Int) ?? 0
+            let isLongFile = duration > 300 || permanentFileSize > 20_000_000  // >5 min or >20 MB
+
+            // For Gemini on long files: show a "processing large file..." status hint
+            if isLongFile && currentModel.provider == .gemini {
+                await MainActor.run {
+                    item.status = .processing(phase: .transcribing)
+                }
+            }
+
             var text = try await serviceRegistry.transcribe(
                 audioURL: permanentURL,
                 model: currentModel,
