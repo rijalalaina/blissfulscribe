@@ -282,6 +282,7 @@ struct BlissfulScribeApp: App {
                                 AnnouncementsService.shared.start()
                             }
 
+                            showWhatsNewIfNeeded()
                             showAccessibilityReminderIfNeeded()
 
                             // Start the automatic audio cleanup process only if transcript cleanup is not enabled
@@ -364,6 +365,26 @@ struct BlissfulScribeApp: App {
             }
         }
         #endif
+    }
+
+    // Show a "What's New" announcement on the first launch after a version upgrade.
+    // Stores the last-seen version in UserDefaults; suppresses if already seen.
+    private func showWhatsNewIfNeeded() {
+        guard hasCompletedOnboardingV2 else { return }
+        let currentVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+        let seenKey = "BlissfulScribeLastSeenVersion"
+        let lastSeen = UserDefaults.standard.string(forKey: seenKey) ?? ""
+        guard currentVersion != lastSeen, !currentVersion.isEmpty else { return }
+        UserDefaults.standard.set(currentVersion, forKey: seenKey)
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            AnnouncementManager.shared.showAnnouncement(
+                title: "What's New in BlissfulScribe \(currentVersion)",
+                description: "• 20 free transcriptions included — no sign-up required\n• Light / Dark / System appearance setting\n• File upload now counts toward the free trial\n• Improved licence activation and paywall",
+                learnMoreURL: URL(string: "https://scribe.blissfulplan.com/blog/"),
+                onDismiss: {}
+            )
+        }
     }
 
     private func showAccessibilityReminderIfNeeded() {

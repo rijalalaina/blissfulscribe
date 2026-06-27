@@ -93,22 +93,23 @@ final class TranscriptionDelivery {
         }
 
         let commandText = text
+        let timeout = customCommand.timeout
         SoundManager.shared.playStopSound()
         await actions.dismiss()
 
         Task {
-            await runCustomCommand(command: command, commandText: commandText)
+            await runCustomCommand(command: command, commandText: commandText, timeout: timeout)
         }
     }
 
-    private func runCustomCommand(command: String, commandText: String) async {
+    private func runCustomCommand(command: String, commandText: String, timeout: TimeInterval = 10) async {
         let startTime = Date()
         logger.notice("Custom command started")
 
         do {
             let result = try await CustomCommandDeliveryRunner.run(
                 command: command,
-                timeout: 10,
+                timeout: timeout,
                 context: CustomCommandDeliveryContext(transcript: commandText)
             )
 

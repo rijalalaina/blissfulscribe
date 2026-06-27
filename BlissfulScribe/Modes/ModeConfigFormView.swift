@@ -578,6 +578,22 @@ struct ModeConfigFormView: View {
                         .stroke(AppTheme.Border.control.opacity(0.4), lineWidth: 1)
                 )
 
+            HStack(spacing: 6) {
+                Text("Timeout")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Stepper(
+                    value: $draft.customCommandTimeout,
+                    in: 1...120,
+                    step: 1
+                ) {
+                    Text("\(Int(draft.customCommandTimeout))s")
+                        .font(.subheadline.monospacedDigit())
+                        .foregroundStyle(.primary)
+                }
+                .fixedSize()
+            }
+
         }
     }
 

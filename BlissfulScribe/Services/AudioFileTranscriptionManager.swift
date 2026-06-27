@@ -113,6 +113,14 @@ class AudioTranscriptionManager: ObservableObject {
     }
 
     private func processItem(_ item: AudioFileQueueItem, modelContext: ModelContext, engine: BlissfulScribeEngine, mode: ModeConfig) async {
+        // Paywall gate: block file transcription when the free trial is exhausted.
+        if LicenseManager.shared.licenseKey == nil,
+           LicenseManager.shared.transcriptionsUsed >= LicenseViewModel.freeTranscriptionLimit {
+            item.status = .failed(message: String(localized: "You've used all 20 free transcriptions. Upgrade to BlissfulScribe to continue."))
+            NotificationCenter.default.post(name: .licenseRequired, object: nil)
+            return
+        }
+
         let serviceRegistry = TranscriptionServiceRegistry(
             modelProvider: engine.whisperModelManager,
             modelsDirectory: engine.whisperModelManager.modelsDirectory,
@@ -252,6 +260,13 @@ class AudioTranscriptionManager: ObservableObject {
             item.transcription = transcription
             item.status = .completed
             lastCompletedItemId = item.id
+
+            // Count this file transcription toward the free trial.
+            if LicenseManager.shared.licenseKey == nil {
+                LicenseManager.shared.incrementTranscriptionsUsed()
+                UserDefaults.standard.synchronize()
+                NotificationCenter.default.post(name: .licenseStatusChanged, object: nil)
+            }
 
         } catch {
             if Task.isCancelled || error is CancellationError {

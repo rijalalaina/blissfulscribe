@@ -29,5 +29,27 @@ struct AppShortcuts : AppShortcutsProvider {
                 shortTitle: "Dismiss Recorder",
                 systemImageName: "xmark.circle"
             )
+
+            AppShortcut(
+                intent: SwitchModeIntent(),
+                phrases: [
+                    "Switch \(.applicationName) mode",
+                    "Change \(.applicationName) mode",
+                    "Use \(.applicationName) mode"
+                ],
+                shortTitle: "Switch Mode",
+                systemImageName: "slider.horizontal.3"
+            )
+
+            AppShortcut(
+                intent: GetLastTranscriptionIntent(),
+                phrases: [
+                    "Get last \(.applicationName) transcription",
+                    "Copy last \(.applicationName) transcription",
+                    "What did \(.applicationName) transcribe"
+                ],
+                shortTitle: "Get Last Transcription",
+                systemImageName: "text.bubble"
+            )
     }
 }

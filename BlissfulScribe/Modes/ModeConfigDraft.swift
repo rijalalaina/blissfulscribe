@@ -22,6 +22,7 @@ struct ModeConfigDraft {
     var outputMode: ModeOutputMode
     var autoSendKey: AutoSendKey
     var customCommand: String
+    var customCommandTimeout: TimeInterval
     var isDefault: Bool
     var isTranscriptionFormattingExpanded: Bool
 
@@ -53,6 +54,7 @@ struct ModeConfigDraft {
             outputMode = .paste
             autoSendKey = .none
             customCommand = inheritedConfig?.customCommand?.command ?? ""
+            customCommandTimeout = inheritedConfig?.customCommand?.timeout ?? 10
             isDefault = false
             isTranscriptionFormattingExpanded = false
             sourceConfig = nil
@@ -80,6 +82,7 @@ struct ModeConfigDraft {
             outputMode = latestConfig.outputMode
             autoSendKey = latestConfig.autoSendKey
             customCommand = latestConfig.customCommand?.command ?? ""
+            customCommandTimeout = latestConfig.customCommand?.timeout ?? 10
             isDefault = latestConfig.isDefault
             isTranscriptionFormattingExpanded = false
             sourceConfig = latestConfig
@@ -213,7 +216,7 @@ struct ModeConfigDraft {
     }
 
     private func makeCustomCommand() -> ModeCustomCommand? {
-        let command = ModeCustomCommand(command: customCommand)
+        let command = ModeCustomCommand(command: customCommand, timeout: customCommandTimeout)
         return command.trimmedCommand == nil ? nil : command
     }
 }

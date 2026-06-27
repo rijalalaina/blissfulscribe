@@ -38,6 +38,18 @@
   </url>
 
   <url>
+    <loc>https://scribe.blissfulplan.com/social-share/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://scribe.blissfulplan.com/affiliate/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
     <loc>https://scribe.blissfulplan.com/privacy/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>

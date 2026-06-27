@@ -52,14 +52,25 @@ enum ModeOutputMode: String, Codable, CaseIterable {
 
 struct ModeCustomCommand: Codable, Equatable {
     var command: String
+    var timeout: TimeInterval
 
-    init(command: String = "") {
+    init(command: String = "", timeout: TimeInterval = 10) {
         self.command = command
+        self.timeout = timeout
     }
 
     var trimmedCommand: String? {
         let trimmed = command.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? nil : trimmed
+    }
+
+    // MARK: - Codable (backward-compatible: timeout defaults to 10 when absent)
+    enum CodingKeys: String, CodingKey { case command, timeout }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        command = try c.decode(String.self, forKey: .command)
+        timeout = try c.decodeIfPresent(TimeInterval.self, forKey: .timeout) ?? 10
     }
 }
 
