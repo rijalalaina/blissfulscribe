@@ -79,7 +79,7 @@ final class TranscriptionDelivery {
                 payload["model"] = item.transcription.transcriptionModelName ?? ""
                 payload["enhanced"] = item.transcription.enhancedText ?? ""
                 payload["duration"] = item.transcription.duration
-                payload["timestamp"] = ISO8601DateFormatter().string(from: item.transcription.createdAt ?? Date())
+                payload["timestamp"] = ISO8601DateFormatter().string(from: item.transcription.timestamp)
             }
 
             do {

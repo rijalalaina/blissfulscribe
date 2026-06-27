@@ -119,7 +119,7 @@ class TranscriptionPipeline {
 
                 text = ""
                 for candidate in modelsToTry {
-                    guard let candidate else { continue }
+                    let candidate = candidate  // non-optional existential
                     do {
                         text = try await serviceRegistry.transcribe(
                             audioURL: audioURL,
