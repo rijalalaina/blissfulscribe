@@ -739,9 +739,9 @@ async function handleContact(request: Request, env: Env): Promise<Response> {
     },
     body: JSON.stringify({
       from: env.FROM_EMAIL,
-      to: env.SUPPORT_EMAIL,
-      reply_to: email,
-      subject: `[BlissfulScribe Contact] ${subject} — ${name}`,
+      to: [env.SUPPORT_EMAIL],
+      reply_to: [email],
+      subject: `[BlissfulScribe Contact] ${subject} — from ${name} <${email}>`,
       html,
     }),
   });
