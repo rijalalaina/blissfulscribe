@@ -685,6 +685,76 @@ async function handleScheduled(env: Env): Promise<void> {
   }
 }
 
+// ── Contact form handler ─────────────────────────────────────────────────────
+
+/** POST /contact — Receives the website contact form and emails via Resend */
+async function handleContact(request: Request, env: Env): Promise<Response> {
+  // Accept both JSON and form-encoded (the HTML form posts multipart/form-data)
+  const ct = request.headers.get("Content-Type") ?? "";
+  let firstName = "", lastName = "", email = "", subject = "", message = "", botcheck = "";
+
+  if (ct.includes("application/x-www-form-urlencoded") || ct.includes("multipart/form-data")) {
+    const form = await request.formData();
+    firstName   = (form.get("firstName")  as string ?? "").trim();
+    lastName    = (form.get("lastName")   as string ?? "").trim();
+    email       = (form.get("email")      as string ?? "").trim();
+    subject     = (form.get("subject")    as string ?? "General enquiry").trim();
+    message     = (form.get("message")    as string ?? "").trim();
+    botcheck    = (form.get("botcheck")   as string ?? "").trim();
+  } else {
+    const body  = await request.json() as Record<string, string>;
+    firstName   = (body.firstName  ?? "").trim();
+    lastName    = (body.lastName   ?? "").trim();
+    email       = (body.email      ?? "").trim();
+    subject     = (body.subject    ?? "General enquiry").trim();
+    message     = (body.message    ?? "").trim();
+    botcheck    = (body.botcheck   ?? "").trim();
+  }
+
+  // Honeypot — bots fill this field
+  if (botcheck) return json({ ok: true }); // silently succeed to fool bots
+
+  if (!email || !message) return err("Missing required fields", 400);
+
+  const name = [firstName, lastName].filter(Boolean).join(" ") || email;
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="font-family:-apple-system,sans-serif;color:#0f172a">
+<h2 style="color:#2563eb">New contact message — BlissfulScribe</h2>
+<table style="border-collapse:collapse;width:100%;max-width:560px">
+  <tr><td style="padding:8px 0;color:#64748b;width:120px"><strong>From</strong></td><td>${name}</td></tr>
+  <tr><td style="padding:8px 0;color:#64748b"><strong>Email</strong></td><td><a href="mailto:${email}">${email}</a></td></tr>
+  <tr><td style="padding:8px 0;color:#64748b"><strong>Subject</strong></td><td>${subject}</td></tr>
+</table>
+<hr style="border:1px solid #e2e8f0;margin:16px 0">
+<p style="white-space:pre-wrap;line-height:1.7">${message.replace(/</g,"&lt;").replace(/>/g,"&gt;")}</p>
+<hr style="border:1px solid #e2e8f0;margin:16px 0">
+<p style="color:#94a3b8;font-size:12px">Sent via scribe.blissfulplan.com/contact</p>
+</body></html>`;
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${env.RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: env.FROM_EMAIL,
+      to: env.SUPPORT_EMAIL,
+      reply_to: email,
+      subject: `[BlissfulScribe Contact] ${subject} — ${name}`,
+      html,
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    console.error(`Contact email error ${res.status}: ${body}`);
+    return err("Failed to send message", 500);
+  }
+
+  return json({ ok: true });
+}
+
 // ── Main fetch handler ───────────────────────────────────────────────────────
 
 export default {
@@ -696,7 +766,7 @@ export default {
     if (method === "OPTIONS") {
       return new Response(null, {
         headers: {
-          "Access-Control-Allow-Origin": env.ALLOWED_ORIGIN,
+          "Access-Control-Allow-Origin": "*",
           "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
           "Access-Control-Allow-Headers": "Content-Type, X-API-Key",
         },
@@ -710,6 +780,7 @@ export default {
       if (url.pathname === "/deactivate") return handleDeactivate(request, env);
       if (url.pathname === "/portal" && method === "GET") return handlePortal(request, env);
       if (url.pathname === "/trial-start" && method === "POST") return handleTrialStart(request, env);
+      if (url.pathname === "/contact" && method === "POST") return handleContact(request, env);
       if (url.pathname === "/health" && method === "GET") return new Response("OK");
       return err("Not found", 404);
     } catch (e) {

@@ -166,7 +166,7 @@
           <!-- Form (hidden after successful submission) -->
           <form
             id="contactForm"
-            action="https://api.web3forms.com/submit"
+            action="https://blissfulscribe-licence.goodtogreatmind.workers.dev/contact"
             method="POST"
             novalidate
           >
@@ -220,12 +220,8 @@
               <textarea class="form-textarea" id="message" name="message" required placeholder="Please describe your question or issue in as much detail as possible…"></textarea>
             </div>
 
-            <!-- Web3Forms access key — replace with yours from web3forms.com (free) -->
-            <input type="hidden" name="access_key" value="REPLACE_YOUR_WEB3FORMS_KEY" />
-            <input type="hidden" name="subject" value="BlissfulScribe Contact Form" />
-            <input type="hidden" name="from_name" value="BlissfulScribe Website" />
             <!-- Honeypot spam protection -->
-            <input type="checkbox" name="botcheck" style="display:none;" tabindex="-1" />
+            <input type="text" name="botcheck" style="display:none;" tabindex="-1" autocomplete="off" />
 
             <p style="font-size: 0.8125rem; color: #94a3b8; margin-bottom: 1.25rem;">
               Fields marked <span style="color:#ef4444;">*</span> are required. We'll only use your email to respond to your message. See our <a href="/privacy/" style="color: #2563eb;">Privacy Policy</a>.
