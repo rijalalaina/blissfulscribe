@@ -226,17 +226,43 @@ struct LicenseManagementView: View {
         }
     }
 
+    private var isOwnerLicence: Bool {
+        licenseViewModel.licenseKey.uppercased().hasPrefix("BSCRB-OWNER")
+    }
+
     private var activeResourceDock: some View {
-        HStack(spacing: 10) {
-            ResourceButton(title: "Changelog", systemImage: "list.bullet.clipboard.fill", tint: neutralIconColor) {
-                openURL("https://github.com/Beingpax/BlissfulScribe/releases")
+        VStack(spacing: 10) {
+            HStack(spacing: 10) {
+                ResourceButton(title: "Changelog", systemImage: "list.bullet.clipboard.fill", tint: neutralIconColor) {
+                    openURL("https://github.com/rijalalaina/blissfulscribe/releases")
+                }
+
+                ResourceButton(title: "Report or Feedback", systemImage: "exclamationmark.bubble.fill", tint: neutralIconColor, action: showReportPanel)
+
+                ResourceButton(title: "Docs", systemImage: "book.fill", tint: neutralIconColor) {
+                    openURL("https://scribe.blissfulplan.com/docs")
+                }
             }
 
-            ResourceButton(title: "Report or Feedback", systemImage: "exclamationmark.bubble.fill", tint: neutralIconColor, action: showReportPanel)
-
-            ResourceButton(title: "Docs", systemImage: "book.fill", tint: neutralIconColor) {
-                openURL("https://scribe.blissfulplan.com/docs")
+            if isOwnerLicence {
+                ResourceButton(
+                    title: "Admin Dashboard",
+                    systemImage: "chart.bar.xaxis",
+                    tint: Color(red: 0.37, green: 0.62, blue: 0.98),
+                    foreground: Color(red: 0.37, green: 0.62, blue: 0.98)
+                ) {
+                    openAdminDashboard()
+                }
+                .frame(maxWidth: .infinity)
             }
+        }
+    }
+
+    private func openAdminDashboard() {
+        let key = licenseViewModel.licenseKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        let encoded = key.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? key
+        if let url = URL(string: "https://blissfulscribe-licence.goodtogreatmind.workers.dev/admin?key=\(encoded)") {
+            NSWorkspace.shared.open(url)
         }
     }
 

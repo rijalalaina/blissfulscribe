@@ -50,6 +50,7 @@ interface LicenceRecord {
   createdAt: string;
   stripeSessionId: string;
   activations: Activation[];
+  isAdmin?: boolean;
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -419,6 +420,7 @@ async function handleValidate(request: Request, env: Env): Promise<Response> {
       valid: !!found,
       maxActivations: record.maxActivations,
       activations: record.activations,
+      isAdmin: record.isAdmin ?? false,
     });
   }
 
@@ -426,6 +428,7 @@ async function handleValidate(request: Request, env: Env): Promise<Response> {
     valid: true,
     maxActivations: record.maxActivations,
     activations: record.activations,
+    isAdmin: record.isAdmin ?? false,
   });
 }
 
@@ -761,6 +764,260 @@ async function handleContact(request: Request, env: Env): Promise<Response> {
   return json({ ok: true });
 }
 
+// ── Admin dashboard ──────────────────────────────────────────────────────────
+
+function adminDashboardHtml(
+  licences: LicenceRecord[],
+  trials: { email: string; startedAt: string; sentDays: number[] }[],
+  stats: { starterCount: number; proCount: number; revenue: number; totalDevices: number },
+  adminKey: string,
+  env: Env,
+  message?: string
+): string {
+  const fmt = (n: number) => n.toLocaleString("en-GB");
+  const fmtDate = (iso: string) => {
+    try { return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }); }
+    catch { return iso.slice(0, 10); }
+  };
+  const fmtRev = (n: number) => `$${n.toFixed(2)}`;
+
+  const licenceRows = licences
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .map(r => {
+      const planBadge = r.product === "pro"
+        ? `<span class="badge-pro">Pro</span>`
+        : `<span class="badge-starter">Starter</span>`;
+      const activRatio = `${r.activations.length} / ${r.maxActivations}`;
+      const activeDevices = r.activations.map(a =>
+        `<div style="font-size:11px;color:#94a3b8;padding:2px 0">${a.deviceName} · ${fmtDate(a.activatedAt)}</div>`
+      ).join("");
+      return `
+        <tr>
+          <td>${r.email || "<span style='color:#64748b'>—</span>"}</td>
+          <td>${planBadge}</td>
+          <td style="font-family:monospace;font-size:12px;color:#94a3b8">••••-${r.key.slice(-4)}</td>
+          <td>
+            <span style="font-weight:600">${activRatio}</span>
+            ${activeDevices}
+          </td>
+          <td style="color:#64748b;font-size:13px">${fmtDate(r.createdAt)}</td>
+          <td>
+            <form method="POST" action="/admin/revoke?adminKey=${encodeURIComponent(adminKey)}" style="margin:0"
+                  onsubmit="return confirm('Revoke licence for ${r.email}? This cannot be undone.')">
+              <input type="hidden" name="licenceKey" value="${r.key}">
+              <button type="submit" class="btn-revoke">Revoke</button>
+            </form>
+          </td>
+        </tr>`;
+    }).join("");
+
+  const trialRows = trials
+    .sort((a, b) => b.startedAt.localeCompare(a.startedAt))
+    .map(t => `
+      <tr>
+        <td>${t.email}</td>
+        <td style="color:#64748b;font-size:13px">${fmtDate(t.startedAt)}</td>
+        <td>
+          ${t.sentDays.length === 0
+            ? `<span style="color:#94a3b8">None yet</span>`
+            : t.sentDays.map(d => `<span class="day-pill">Day ${d}</span>`).join(" ")}
+        </td>
+      </tr>`).join("");
+
+  const alertHtml = message
+    ? `<div class="alert">${message}</div>`
+    : "";
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Admin Dashboard · BlissfulScribe</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:#0f172a;color:#e2e8f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px}
+    .topbar{background:linear-gradient(135deg,#2563eb,#0d9488);padding:14px 24px;display:flex;align-items:center;gap:12px}
+    .topbar-brand{color:#fff;font-size:17px;font-weight:700}
+    .topbar-label{color:rgba(255,255,255,.7);font-size:12px;background:rgba(255,255,255,.15);padding:3px 10px;border-radius:999px}
+    .container{max-width:1100px;margin:0 auto;padding:28px 20px}
+    h2{font-size:15px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;margin-bottom:14px}
+    .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:32px}
+    .stat{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:18px 20px}
+    .stat-val{font-size:28px;font-weight:800;background:linear-gradient(135deg,#60a5fa,#34d399);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .stat-label{font-size:12px;color:#64748b;margin-top:4px}
+    .card{background:#1e293b;border:1px solid #334155;border-radius:12px;overflow:hidden;margin-bottom:28px}
+    .card-hdr{padding:14px 20px;border-bottom:1px solid #334155;display:flex;align-items:center;justify-content:space-between}
+    .card-hdr-title{font-size:15px;font-weight:600}
+    .card-hdr-count{font-size:12px;color:#64748b;background:#0f172a;padding:3px 10px;border-radius:999px}
+    table{width:100%;border-collapse:collapse}
+    th{padding:10px 16px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#64748b;background:#0f172a;border-bottom:1px solid #334155}
+    td{padding:11px 16px;border-bottom:1px solid #1e293b;vertical-align:top}
+    tr:last-child td{border-bottom:none}
+    tr:hover td{background:rgba(255,255,255,.02)}
+    .badge-pro{background:linear-gradient(135deg,#2563eb,#0d9488);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+    .badge-starter{background:#334155;color:#94a3b8;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+    .btn-revoke{background:#450a0a;color:#fca5a5;border:1px solid #7f1d1d;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600}
+    .btn-revoke:hover{background:#7f1d1d}
+    .day-pill{background:#1e40af;color:#bfdbfe;font-size:11px;padding:2px 7px;border-radius:999px}
+    .empty{padding:28px;text-align:center;color:#475569}
+    .alert{background:#14532d;border:1px solid #166534;color:#86efac;padding:12px 18px;border-radius:8px;margin-bottom:20px}
+  </style>
+</head>
+<body>
+<div class="topbar">
+  <span class="topbar-brand">BlissfulScribe</span>
+  <span class="topbar-label">Admin Dashboard</span>
+</div>
+<div class="container">
+  ${alertHtml}
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-val">${fmt(licences.length)}</div>
+      <div class="stat-label">Total licences sold</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">${fmt(stats.starterCount)}</div>
+      <div class="stat-label">Starter ($9.99)</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">${fmt(stats.proCount)}</div>
+      <div class="stat-label">Pro ($19.99)</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">${fmtRev(stats.revenue)}</div>
+      <div class="stat-label">Est. gross revenue</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">${fmt(stats.totalDevices)}</div>
+      <div class="stat-label">Active devices</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">${fmt(trials.length)}</div>
+      <div class="stat-label">Trial users</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-hdr-title">Licence Keys</span>
+      <span class="card-hdr-count">${licences.length} total</span>
+    </div>
+    ${licences.length === 0
+      ? `<div class="empty">No licences issued yet.</div>`
+      : `<table>
+        <thead><tr>
+          <th>Email</th><th>Plan</th><th>Key</th><th>Activations</th><th>Issued</th><th>Action</th>
+        </tr></thead>
+        <tbody>${licenceRows}</tbody>
+      </table>`}
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-hdr-title">Trial Users (drip sequence)</span>
+      <span class="card-hdr-count">${trials.length} registered</span>
+    </div>
+    ${trials.length === 0
+      ? `<div class="empty">No trial email registrations yet.</div>`
+      : `<table>
+        <thead><tr>
+          <th>Email</th><th>Trial started</th><th>Drip emails sent</th>
+        </tr></thead>
+        <tbody>${trialRows}</tbody>
+      </table>`}
+  </div>
+
+  <p style="color:#334155;font-size:12px;text-align:center;margin-top:8px">
+    Data is live from Cloudflare KV · Refresh the page to update
+  </p>
+</div>
+</body>
+</html>`;
+}
+
+/** GET /admin — Owner-only analytics dashboard */
+async function handleAdmin(request: Request, env: Env): Promise<Response> {
+  const url = new URL(request.url);
+  const key = url.searchParams.get("key")?.trim().toUpperCase();
+
+  if (!key) {
+    return new Response("Admin key required. Append ?key=YOUR_ADMIN_KEY", {
+      status: 403,
+      headers: { "Content-Type": "text/plain" },
+    });
+  }
+
+  const record = await getLicence(env.LICENCES, key);
+  if (!record?.isAdmin) {
+    return new Response("Unauthorized", {
+      status: 403,
+      headers: { "Content-Type": "text/plain" },
+    });
+  }
+
+  // Gather all licence records (excluding admin key itself)
+  const licenceList = await env.LICENCES.list({ prefix: "licence:" });
+  const licenceRecords: LicenceRecord[] = [];
+  for (const k of licenceList.keys) {
+    const raw = await env.LICENCES.get(k.name);
+    if (!raw) continue;
+    try {
+      const r = JSON.parse(raw) as LicenceRecord;
+      if (!r.isAdmin) licenceRecords.push(r);
+    } catch { /* skip malformed */ }
+  }
+
+  // Gather trial records
+  const trialList = await env.LICENCES.list({ prefix: "trial:" });
+  const trialRecords: { email: string; startedAt: string; sentDays: number[] }[] = [];
+  for (const k of trialList.keys) {
+    const raw = await env.LICENCES.get(k.name);
+    if (!raw) continue;
+    try { trialRecords.push(JSON.parse(raw)); } catch { /* skip */ }
+  }
+
+  const starterCount = licenceRecords.filter(r => r.product === "starter").length;
+  const proCount = licenceRecords.filter(r => r.product === "pro").length;
+  const revenue = starterCount * 9.99 + proCount * 19.99;
+  const totalDevices = licenceRecords.reduce((sum, r) => sum + r.activations.length, 0);
+
+  const successMsg = url.searchParams.get("success")
+    ? `Licence ${url.searchParams.get("licence") ?? ""} has been revoked.`
+    : undefined;
+
+  const html = adminDashboardHtml(
+    licenceRecords, trialRecords,
+    { starterCount, proCount, revenue, totalDevices },
+    key, env, successMsg
+  );
+
+  return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
+}
+
+/** POST /admin/revoke — Revoke a licence key (admin only) */
+async function handleAdminRevoke(request: Request, env: Env): Promise<Response> {
+  const url = new URL(request.url);
+  const adminKey = url.searchParams.get("adminKey")?.trim().toUpperCase();
+
+  const adminRecord = adminKey ? await getLicence(env.LICENCES, adminKey) : null;
+  if (!adminRecord?.isAdmin) {
+    return new Response("Unauthorized", { status: 403, headers: { "Content-Type": "text/plain" } });
+  }
+
+  const form = await request.formData();
+  const licenceKey = (form.get("licenceKey") as string | null)?.trim().toUpperCase();
+  if (!licenceKey) return new Response("Missing licenceKey", { status: 400 });
+
+  await env.LICENCES.delete(`licence:${licenceKey}`);
+
+  const encodedKey = encodeURIComponent(adminKey);
+  return Response.redirect(
+    `${url.origin}/admin?key=${encodedKey}&success=1&licence=${licenceKey}`,
+    302
+  );
+}
+
 // ── Main fetch handler ───────────────────────────────────────────────────────
 
 export default {
@@ -787,6 +1044,8 @@ export default {
       if (url.pathname === "/portal" && method === "GET") return handlePortal(request, env);
       if (url.pathname === "/trial-start" && method === "POST") return handleTrialStart(request, env);
       if (url.pathname === "/contact" && method === "POST") return handleContact(request, env);
+      if (url.pathname === "/admin" && method === "GET") return handleAdmin(request, env);
+      if (url.pathname === "/admin/revoke" && method === "POST") return handleAdminRevoke(request, env);
       if (url.pathname === "/health" && method === "GET") return new Response("OK");
       return err("Not found", 404);
     } catch (e) {
