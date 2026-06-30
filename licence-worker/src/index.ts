@@ -32,6 +32,10 @@ export interface Env {
   SUPPORT_EMAIL: string;
   PORTAL_URL: string;
   APP_NAME: string;
+  CF_ZONE_ID: string;
+  GH_REPO: string;
+  CF_ANALYTICS_TOKEN?: string;
+  GH_TOKEN?: string;
 }
 
 interface Activation {
@@ -764,6 +768,130 @@ async function handleContact(request: Request, env: Env): Promise<Response> {
   return json({ ok: true });
 }
 
+// ── External stats helpers ────────────────────────────────────────────────────
+
+interface DailyAnalytics {
+  date: string;
+  pageViews: number;
+  uniques: number;
+  requests: number;
+}
+
+interface SiteStats {
+  pageViews30d: number;
+  uniques30d: number;
+  requests30d: number;
+  daily: DailyAnalytics[];
+}
+
+async function fetchCFAnalytics(env: Env): Promise<SiteStats | null> {
+  if (!env.CF_ANALYTICS_TOKEN || !env.CF_ZONE_ID) return null;
+
+  const now = new Date();
+  const dateLeq = now.toISOString().slice(0, 10);
+  const dateGeq = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+  const query = `{
+    viewer {
+      zones(filter: { zoneTag: "${env.CF_ZONE_ID}" }) {
+        httpRequests1dGroups(
+          limit: 30
+          orderBy: [date_ASC]
+          filter: { date_geq: "${dateGeq}", date_leq: "${dateLeq}" }
+        ) {
+          sum { requests pageViews }
+          uniq { uniques }
+          dimensions { date }
+        }
+      }
+    }
+  }`;
+
+  try {
+    const res = await fetch("https://api.cloudflare.com/client/v4/graphql", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.CF_ANALYTICS_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ query }),
+    });
+
+    if (!res.ok) return null;
+
+    const data = await res.json() as {
+      data?: {
+        viewer?: {
+          zones?: Array<{
+            httpRequests1dGroups?: Array<{
+              sum: { requests: number; pageViews: number };
+              uniq: { uniques: number };
+              dimensions: { date: string };
+            }>;
+          }>;
+        };
+      };
+    };
+
+    const groups = data?.data?.viewer?.zones?.[0]?.httpRequests1dGroups ?? [];
+    const daily: DailyAnalytics[] = groups.map(g => ({
+      date: g.dimensions.date,
+      pageViews: g.sum.pageViews,
+      uniques: g.uniq.uniques,
+      requests: g.sum.requests,
+    }));
+
+    return {
+      pageViews30d: daily.reduce((s, d) => s + d.pageViews, 0),
+      uniques30d: daily.reduce((s, d) => s + d.uniques, 0),
+      requests30d: daily.reduce((s, d) => s + d.requests, 0),
+      daily,
+    };
+  } catch {
+    return null;
+  }
+}
+
+interface ReleaseDownloads {
+  tag: string;
+  downloads: number;
+  assets: { name: string; downloads: number }[];
+}
+
+async function fetchGitHubDownloads(env: Env): Promise<{ releases: ReleaseDownloads[]; total: number } | null> {
+  if (!env.GH_TOKEN || !env.GH_REPO) return null;
+
+  try {
+    const res = await fetch(`https://api.github.com/repos/${env.GH_REPO}/releases`, {
+      headers: {
+        Authorization: `Bearer ${env.GH_TOKEN}`,
+        Accept: "application/vnd.github+json",
+        "User-Agent": "BlissfulScribe-Admin/1.0",
+      },
+    });
+
+    if (!res.ok) return null;
+
+    const releases = await res.json() as Array<{
+      tag_name: string;
+      assets: Array<{ name: string; download_count: number }>;
+    }>;
+
+    const parsed: ReleaseDownloads[] = releases.map(r => ({
+      tag: r.tag_name,
+      downloads: r.assets.reduce((s, a) => s + a.download_count, 0),
+      assets: r.assets.map(a => ({ name: a.name, downloads: a.download_count })),
+    }));
+
+    return {
+      releases: parsed,
+      total: parsed.reduce((s, r) => s + r.downloads, 0),
+    };
+  } catch {
+    return null;
+  }
+}
+
 // ── Admin dashboard ──────────────────────────────────────────────────────────
 
 function adminDashboardHtml(
@@ -772,7 +900,9 @@ function adminDashboardHtml(
   stats: { starterCount: number; proCount: number; revenue: number; totalDevices: number },
   adminKey: string,
   env: Env,
-  message?: string
+  message?: string,
+  siteStats?: SiteStats | null,
+  ghStats?: { releases: ReleaseDownloads[]; total: number } | null
 ): string {
   const fmt = (n: number) => n.toLocaleString("en-GB");
   const fmtDate = (iso: string) => {
@@ -845,7 +975,11 @@ function adminDashboardHtml(
     .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:32px}
     .stat{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:18px 20px}
     .stat-val{font-size:28px;font-weight:800;background:linear-gradient(135deg,#60a5fa,#34d399);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .stat-val-sm{font-size:22px;font-weight:800;background:linear-gradient(135deg,#f472b6,#fb923c);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
     .stat-label{font-size:12px;color:#64748b;margin-top:4px}
+    .section-title{font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.06em;margin:28px 0 12px}
+    .bar-wrap{display:flex;align-items:flex-end;gap:3px;height:56px;margin-top:8px}
+    .bar{flex:1;border-radius:2px 2px 0 0;min-height:2px;cursor:default}
     .card{background:#1e293b;border:1px solid #334155;border-radius:12px;overflow:hidden;margin-bottom:28px}
     .card-hdr{padding:14px 20px;border-bottom:1px solid #334155;display:flex;align-items:center;justify-content:space-between}
     .card-hdr-title{font-size:15px;font-weight:600}
@@ -871,10 +1005,12 @@ function adminDashboardHtml(
 </div>
 <div class="container">
   ${alertHtml}
+
+  <div class="section-title">Sales & Licences</div>
   <div class="stats">
     <div class="stat">
       <div class="stat-val">${fmt(licences.length)}</div>
-      <div class="stat-label">Total licences sold</div>
+      <div class="stat-label">Licences sold</div>
     </div>
     <div class="stat">
       <div class="stat-val">${fmt(stats.starterCount)}</div>
@@ -897,6 +1033,48 @@ function adminDashboardHtml(
       <div class="stat-label">Trial users</div>
     </div>
   </div>
+
+  <div class="section-title">Website & Downloads (last 30 days)</div>
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-val-sm">${siteStats ? fmt(siteStats.pageViews30d) : "—"}</div>
+      <div class="stat-label">Page views</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val-sm">${siteStats ? fmt(siteStats.uniques30d) : "—"}</div>
+      <div class="stat-label">Unique visitors</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val-sm">${siteStats ? fmt(siteStats.requests30d) : "—"}</div>
+      <div class="stat-label">Total requests</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val-sm">${ghStats ? fmt(ghStats.total) : "—"}</div>
+      <div class="stat-label">DMG downloads (all releases)</div>
+    </div>
+    ${ghStats ? ghStats.releases.map(r => `
+    <div class="stat">
+      <div class="stat-val-sm">${fmt(r.downloads)}</div>
+      <div class="stat-label">Downloads · ${r.tag}</div>
+    </div>`).join("") : ""}
+  </div>
+
+  ${siteStats && siteStats.daily.length > 0 ? (() => {
+    const last14 = siteStats.daily.slice(-14);
+    const maxPV = Math.max(...last14.map(d => d.pageViews), 1);
+    const bars = last14.map(d => {
+      const pct = Math.round((d.pageViews / maxPV) * 100);
+      const label = `${d.date}: ${d.pageViews} views, ${d.uniques} visitors`;
+      return `<div class="bar" style="background:#2563eb;height:${Math.max(pct,3)}%" title="${label}"></div>`;
+    }).join("");
+    return `<div class="card" style="padding:18px 20px;margin-bottom:28px">
+      <div style="font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:4px">Page views · last 14 days</div>
+      <div class="bar-wrap">${bars}</div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:#475569;margin-top:6px">
+        <span>${last14[0]?.date ?? ""}</span><span>${last14[last14.length-1]?.date ?? ""}</span>
+      </div>
+    </div>`;
+  })() : ""}
 
   <div class="card">
     <div class="card-hdr">
@@ -982,6 +1160,12 @@ async function handleAdmin(request: Request, env: Env): Promise<Response> {
   const revenue = starterCount * 9.99 + proCount * 19.99;
   const totalDevices = licenceRecords.reduce((sum, r) => sum + r.activations.length, 0);
 
+  // Fetch external stats in parallel
+  const [siteStats, ghStats] = await Promise.all([
+    fetchCFAnalytics(env),
+    fetchGitHubDownloads(env),
+  ]);
+
   const successMsg = url.searchParams.get("success")
     ? `Licence ${url.searchParams.get("licence") ?? ""} has been revoked.`
     : undefined;
@@ -989,7 +1173,7 @@ async function handleAdmin(request: Request, env: Env): Promise<Response> {
   const html = adminDashboardHtml(
     licenceRecords, trialRecords,
     { starterCount, proCount, revenue, totalDevices },
-    key, env, successMsg
+    key, env, successMsg, siteStats, ghStats
   );
 
   return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
