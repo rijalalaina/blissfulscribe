@@ -4,7 +4,7 @@ WHISPER_CPP_DIR := $(DEPS_DIR)/whisper.cpp
 FRAMEWORK_PATH := $(WHISPER_CPP_DIR)/build-apple/whisper.xcframework
 LOCAL_DERIVED_DATA := $(CURDIR)/.local-build
 
-.PHONY: all clean whisper setup build local check healthcheck help dev run
+.PHONY: all clean whisper setup build local check healthcheck help dev run release
 
 # Default target
 all: check build
@@ -93,6 +93,12 @@ run:
 		fi; \
 	fi
 
+# Release: build, package, Sparkle-sign, publish to GitHub + appcast
+# Usage: make release VERSION=3.1 NOTES="What changed"
+release: check setup
+	@[ -n "$(VERSION)" ] || { echo "Usage: make release VERSION=3.1 NOTES=\"What changed\""; exit 1; }
+	@scripts/release.sh "$(VERSION)" "$(NOTES)"
+
 # Cleanup
 clean:
 	@echo "Cleaning build artifacts..."
@@ -109,6 +115,7 @@ help:
 	@echo "  local              Build for local use (no Apple Developer certificate needed)"
 	@echo "  run                Launch the built BlissfulScribe app"
 	@echo "  dev                Build and run the app (for development)"
+	@echo "  release            Publish a release: make release VERSION=3.1 NOTES=\"...\""
 	@echo "  all                Run full build process (default)"
 	@echo "  clean              Remove build artifacts"
 	@echo "  help               Show this help message"

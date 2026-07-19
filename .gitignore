@@ -101,3 +101,7 @@ Icon
 Network Trash Folder
 Temporary Items
 .apdisk 
+# Release artifacts
+dist/
+.release-build/
+.claude/settings.local*
