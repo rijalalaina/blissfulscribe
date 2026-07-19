@@ -24,6 +24,7 @@ export interface Env {
   RESEND_API_KEY: string;
   WORKER_API_KEY: string;
   ALLOWED_ORIGIN: string;
+  ALLOWED_PAYMENT_LINKS: string;
   STARTER_AMOUNT_CENTS: string;
   PRO_AMOUNT_CENTS: string;
   STARTER_MAX_ACTIVATIONS: string;
@@ -33,6 +34,7 @@ export interface Env {
   PORTAL_URL: string;
   APP_NAME: string;
   CF_ZONE_ID: string;
+  ANALYTICS_HOST: string;
   GH_REPO: string;
   CF_ANALYTICS_TOKEN?: string;
   GH_TOKEN?: string;
@@ -341,6 +343,24 @@ async function handleWebhook(request: Request, env: Env): Promise<Response> {
   const email = (session.customer_details as Record<string, string> | null)?.email ?? "";
   const name = (session.customer_details as Record<string, string> | null)?.name ?? "";
   const amountTotal = (session.amount_total as number) ?? 0;
+
+  // The Stripe account hosts multiple products (e.g. TubeBook), and every
+  // webhook endpoint receives every checkout.session.completed on the
+  // account. Only sessions from BlissfulScribe's own Payment Links may
+  // mint a licence.
+  const allowedLinks = env.ALLOWED_PAYMENT_LINKS.split(",").map((s) => s.trim()).filter(Boolean);
+  const paymentLink = (session.payment_link as string | null) ?? "";
+  if (!allowedLinks.includes(paymentLink)) {
+    console.log(`Ignoring session ${sessionId}: payment_link ${paymentLink || "(none)"} is not a BlissfulScribe link`);
+    return new Response("Ignored", { status: 200 });
+  }
+
+  // checkout.session.completed also fires for async payment methods while
+  // the payment is still pending — only issue a key once money has moved.
+  if (session.payment_status !== "paid") {
+    console.log(`Ignoring session ${sessionId}: payment_status is ${session.payment_status}`);
+    return new Response("Ignored", { status: 200 });
+  }
 
   if (!email) {
     console.error("No customer email in session", sessionId);
@@ -772,40 +792,34 @@ async function handleContact(request: Request, env: Env): Promise<Response> {
 
 interface DailyAnalytics {
   date: string;
-  pageViews: number;
-  uniques: number;
+  visits: number;
   requests: number;
 }
 
 interface SiteStats {
-  pageViews30d: number;
-  uniques30d: number;
-  requests30d: number;
+  visitsTotal: number;
+  requestsTotal: number;
+  days: number;
   daily: DailyAnalytics[];
 }
 
 async function fetchCFAnalytics(env: Env): Promise<SiteStats | null> {
-  if (!env.CF_ANALYTICS_TOKEN || !env.CF_ZONE_ID) return null;
+  if (!env.CF_ANALYTICS_TOKEN || !env.CF_ZONE_ID || !env.ANALYTICS_HOST) return null;
 
-  const now = new Date();
-  const dateLeq = now.toISOString().slice(0, 10);
-  const dateGeq = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-
-  const query = `{
-    viewer {
-      zones(filter: { zoneTag: "${env.CF_ZONE_ID}" }) {
-        httpRequests1dGroups(
-          limit: 30
-          orderBy: [date_ASC]
-          filter: { date_geq: "${dateGeq}", date_leq: "${dateLeq}" }
-        ) {
-          sum { requests pageViews }
-          uniq { uniques }
-          dimensions { date }
-        }
-      }
-    }
-  }`;
+  // The zone hosts several sites (main blissfulplan.com, scribe, …), so
+  // zone-wide totals wildly overstate this product's traffic. The adaptive
+  // dataset can filter by hostname but free-plan zones cap it at 1-day query
+  // windows and ~8 days of retention — so fetch the last 8 days as one
+  // aliased query, one alias per day.
+  const DAYS = 8;
+  const days: string[] = [];
+  for (let i = DAYS - 1; i >= 0; i--) {
+    days.push(new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString().slice(0, 10));
+  }
+  const aliases = days.map((d, i) =>
+    `d${i}: httpRequestsAdaptiveGroups(limit: 1, filter: { date: "${d}", clientRequestHTTPHost: "${env.ANALYTICS_HOST}" }) { count sum { visits } }`
+  ).join("\n");
+  const query = `{ viewer { zones(filter: { zoneTag: "${env.CF_ZONE_ID}" }) { ${aliases} } } }`;
 
   try {
     const res = await fetch("https://api.cloudflare.com/client/v4/graphql", {
@@ -822,29 +836,23 @@ async function fetchCFAnalytics(env: Env): Promise<SiteStats | null> {
     const data = await res.json() as {
       data?: {
         viewer?: {
-          zones?: Array<{
-            httpRequests1dGroups?: Array<{
-              sum: { requests: number; pageViews: number };
-              uniq: { uniques: number };
-              dimensions: { date: string };
-            }>;
-          }>;
+          zones?: Array<Record<string, Array<{ count: number; sum: { visits: number } }>>>;
         };
       };
     };
 
-    const groups = data?.data?.viewer?.zones?.[0]?.httpRequests1dGroups ?? [];
-    const daily: DailyAnalytics[] = groups.map(g => ({
-      date: g.dimensions.date,
-      pageViews: g.sum.pageViews,
-      uniques: g.uniq.uniques,
-      requests: g.sum.requests,
-    }));
+    const zone = data?.data?.viewer?.zones?.[0];
+    if (!zone) return null;
+
+    const daily: DailyAnalytics[] = days.map((date, i) => {
+      const g = zone[`d${i}`]?.[0];
+      return { date, visits: g?.sum?.visits ?? 0, requests: g?.count ?? 0 };
+    });
 
     return {
-      pageViews30d: daily.reduce((s, d) => s + d.pageViews, 0),
-      uniques30d: daily.reduce((s, d) => s + d.uniques, 0),
-      requests30d: daily.reduce((s, d) => s + d.requests, 0),
+      visitsTotal: daily.reduce((s, d) => s + d.visits, 0),
+      requestsTotal: daily.reduce((s, d) => s + d.requests, 0),
+      days: DAYS,
       daily,
     };
   } catch {
@@ -859,16 +867,17 @@ interface ReleaseDownloads {
 }
 
 async function fetchGitHubDownloads(env: Env): Promise<{ releases: ReleaseDownloads[]; total: number } | null> {
-  if (!env.GH_TOKEN || !env.GH_REPO) return null;
+  if (!env.GH_REPO) return null;
 
   try {
-    const res = await fetch(`https://api.github.com/repos/${env.GH_REPO}/releases`, {
-      headers: {
-        Authorization: `Bearer ${env.GH_TOKEN}`,
-        Accept: "application/vnd.github+json",
-        "User-Agent": "BlissfulScribe-Admin/1.0",
-      },
-    });
+    // The repo is public, so no token is needed; GH_TOKEN just raises the
+    // API rate limit if set.
+    const headers: Record<string, string> = {
+      Accept: "application/vnd.github+json",
+      "User-Agent": "BlissfulScribe-Admin/1.0",
+    };
+    if (env.GH_TOKEN) headers.Authorization = `Bearer ${env.GH_TOKEN}`;
+    const res = await fetch(`https://api.github.com/repos/${env.GH_REPO}/releases`, { headers });
 
     if (!res.ok) return null;
 
@@ -914,9 +923,11 @@ function adminDashboardHtml(
   const licenceRows = licences
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .map(r => {
-      const planBadge = r.product === "pro"
+      const isTest = r.stripeSessionId?.startsWith("cs_test") ?? false;
+      const planBadge = (r.product === "pro"
         ? `<span class="badge-pro">Pro</span>`
-        : `<span class="badge-starter">Starter</span>`;
+        : `<span class="badge-starter">Starter</span>`)
+        + (isTest ? ` <span class="badge-test">test</span>` : "");
       const activRatio = `${r.activations.length} / ${r.maxActivations}`;
       const activeDevices = r.activations.map(a =>
         `<div style="font-size:11px;color:#94a3b8;padding:2px 0">${a.deviceName} · ${fmtDate(a.activatedAt)}</div>`
@@ -991,6 +1002,7 @@ function adminDashboardHtml(
     tr:hover td{background:rgba(255,255,255,.02)}
     .badge-pro{background:linear-gradient(135deg,#2563eb,#0d9488);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
     .badge-starter{background:#334155;color:#94a3b8;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+    .badge-test{background:#422006;color:#fbbf24;font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px}
     .btn-revoke{background:#450a0a;color:#fca5a5;border:1px solid #7f1d1d;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600}
     .btn-revoke:hover{background:#7f1d1d}
     .day-pill{background:#1e40af;color:#bfdbfe;font-size:11px;padding:2px 7px;border-radius:999px}
@@ -1006,10 +1018,10 @@ function adminDashboardHtml(
 <div class="container">
   ${alertHtml}
 
-  <div class="section-title">Sales & Licences</div>
+  <div class="section-title">Sales & Licences (test keys excluded)</div>
   <div class="stats">
     <div class="stat">
-      <div class="stat-val">${fmt(licences.length)}</div>
+      <div class="stat-val">${fmt(stats.starterCount + stats.proCount)}</div>
       <div class="stat-label">Licences sold</div>
     </div>
     <div class="stat">
@@ -1034,19 +1046,15 @@ function adminDashboardHtml(
     </div>
   </div>
 
-  <div class="section-title">Website & Downloads (last 30 days)</div>
+  <div class="section-title">Site & Downloads · ${env.ANALYTICS_HOST} only</div>
   <div class="stats">
     <div class="stat">
-      <div class="stat-val-sm">${siteStats ? fmt(siteStats.pageViews30d) : "—"}</div>
-      <div class="stat-label">Page views</div>
+      <div class="stat-val-sm">${siteStats ? fmt(siteStats.visitsTotal) : "—"}</div>
+      <div class="stat-label">Site visits (last ${siteStats?.days ?? 8} days)</div>
     </div>
     <div class="stat">
-      <div class="stat-val-sm">${siteStats ? fmt(siteStats.uniques30d) : "—"}</div>
-      <div class="stat-label">Unique visitors</div>
-    </div>
-    <div class="stat">
-      <div class="stat-val-sm">${siteStats ? fmt(siteStats.requests30d) : "—"}</div>
-      <div class="stat-label">Total requests</div>
+      <div class="stat-val-sm">${siteStats ? fmt(siteStats.requestsTotal) : "—"}</div>
+      <div class="stat-label">Requests (last ${siteStats?.days ?? 8} days)</div>
     </div>
     <div class="stat">
       <div class="stat-val-sm">${ghStats ? fmt(ghStats.total) : "—"}</div>
@@ -1060,18 +1068,18 @@ function adminDashboardHtml(
   </div>
 
   ${siteStats && siteStats.daily.length > 0 ? (() => {
-    const last14 = siteStats.daily.slice(-14);
-    const maxPV = Math.max(...last14.map(d => d.pageViews), 1);
-    const bars = last14.map(d => {
-      const pct = Math.round((d.pageViews / maxPV) * 100);
-      const label = `${d.date}: ${d.pageViews} views, ${d.uniques} visitors`;
+    const daily = siteStats.daily;
+    const maxPV = Math.max(...daily.map(d => d.visits), 1);
+    const bars = daily.map(d => {
+      const pct = Math.round((d.visits / maxPV) * 100);
+      const label = `${d.date}: ${d.visits} visits, ${d.requests} requests`;
       return `<div class="bar" style="background:#2563eb;height:${Math.max(pct,3)}%" title="${label}"></div>`;
     }).join("");
     return `<div class="card" style="padding:18px 20px;margin-bottom:28px">
-      <div style="font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:4px">Page views · last 14 days</div>
+      <div style="font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:4px">Site visits · ${env.ANALYTICS_HOST} · last ${siteStats.days} days</div>
       <div class="bar-wrap">${bars}</div>
       <div style="display:flex;justify-content:space-between;font-size:11px;color:#475569;margin-top:6px">
-        <span>${last14[0]?.date ?? ""}</span><span>${last14[last14.length-1]?.date ?? ""}</span>
+        <span>${daily[0]?.date ?? ""}</span><span>${daily[daily.length-1]?.date ?? ""}</span>
       </div>
     </div>`;
   })() : ""}
@@ -1155,10 +1163,13 @@ async function handleAdmin(request: Request, env: Env): Promise<Response> {
     try { trialRecords.push(JSON.parse(raw)); } catch { /* skip */ }
   }
 
-  const starterCount = licenceRecords.filter(r => r.product === "starter").length;
-  const proCount = licenceRecords.filter(r => r.product === "pro").length;
+  // Manually-minted test keys (stripeSessionId "cs_test…") stay visible in
+  // the table but must not count as sales.
+  const realLicences = licenceRecords.filter(r => !r.stripeSessionId?.startsWith("cs_test"));
+  const starterCount = realLicences.filter(r => r.product === "starter").length;
+  const proCount = realLicences.filter(r => r.product === "pro").length;
   const revenue = starterCount * 9.99 + proCount * 19.99;
-  const totalDevices = licenceRecords.reduce((sum, r) => sum + r.activations.length, 0);
+  const totalDevices = realLicences.reduce((sum, r) => sum + r.activations.length, 0);
 
   // Fetch external stats in parallel
   const [siteStats, ghStats] = await Promise.all([
@@ -1195,7 +1206,7 @@ async function handleAdminRevoke(request: Request, env: Env): Promise<Response> 
 
   await env.LICENCES.delete(`licence:${licenceKey}`);
 
-  const encodedKey = encodeURIComponent(adminKey);
+  const encodedKey = encodeURIComponent(adminKey!);
   return Response.redirect(
     `${url.origin}/admin?key=${encodedKey}&success=1&licence=${licenceKey}`,
     302

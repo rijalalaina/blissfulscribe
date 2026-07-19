@@ -1,0 +1,20 @@
+<?xml version="1.0" standalone="yes"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+    <channel>
+        <title>BlissfulScribe</title>
+        <item>
+            <title>3.0</title>
+            <description><![CDATA[
+                <h3>BlissfulScribe 3.0</h3>
+                <ul>
+                    <li>🎉 First BlissfulScribe release</li>
+                </ul>
+            ]]></description>
+            <pubDate>Wed, 24 Jun 2026 05:31:38 +0000</pubDate>
+            <sparkle:version>300</sparkle:version>
+            <sparkle:shortVersionString>3.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.4</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/rijalalaina/blissfulscribe/releases/download/v3.0/BlissfulScribe-3.0.dmg" length="26893224" type="application/octet-stream" sparkle:edSignature="n2aTDTeNcfYLljnAHkJEg4HaSDVRqKWWRnP2ZiV4MFQsG8rEpEcs/lcsxQGm0wekdn7digrO3kc6CYiVMdjjCw=="/>
+        </item>
+    </channel>
+</rss>

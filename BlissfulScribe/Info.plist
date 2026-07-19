@@ -5,9 +5,9 @@
 	<key>SUEnableInstallerLauncherService</key>
 	<true/>
 	<key>SUFeedURL</key>
-	<string>https://beingpax.github.io/BlissfulScribe/appcast.xml</string>
+	<string>https://scribe.blissfulplan.com/appcast.xml</string>
 	<key>SUPublicEDKey</key>
-	<string>gnXep9+mzNXFSbX0jU7CpLtubcQ5WVfVGe0BxsSdS40=</string>
+	<string>NOIlOEtJj+IdZ9vD5N8nr8o8qnnPDNRLO9rmRkWoXNA=</string>
 	<key>LSUIElement</key>
 	<false/>
 	<key>SUEnableAutomaticChecks</key>

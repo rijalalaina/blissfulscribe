@@ -23,6 +23,9 @@ crons = ["0 10 * * *"]   # run daily at 10:00 UTC to process drip queue
 
 [vars]
 ALLOWED_ORIGIN = "https://scribe.blissfulplan.com"
+# BlissfulScribe's own Stripe Payment Links (Starter, Pro). Sessions from any
+# other payment link / product on the Stripe account are ignored by /webhook.
+ALLOWED_PAYMENT_LINKS = "plink_1TljfQIUw3kJx18GZ9fujCVl,plink_1TljcNIUw3kJx18Gqq2pwLhh"
 STARTER_MAX_ACTIVATIONS = "1"
 PRO_MAX_ACTIVATIONS     = "3"
 STARTER_AMOUNT_CENTS    = "999"
@@ -32,4 +35,7 @@ SUPPORT_EMAIL           = "contact@blissfulplan.com"
 PORTAL_URL              = "https://scribe.blissfulplan.com/portal"
 APP_NAME                = "BlissfulScribe"
 CF_ZONE_ID              = "21f03092fa8a356bbce8945aa32cdc7b"
+# Admin analytics are scoped to this hostname — the zone also serves the main
+# blissfulplan.com site, whose traffic must not count as BlissfulScribe's.
+ANALYTICS_HOST          = "scribe.blissfulplan.com"
 GH_REPO                 = "rijalalaina/blissfulscribe"
