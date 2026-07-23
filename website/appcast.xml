@@ -3,6 +3,18 @@
     <channel>
         <title>BlissfulScribe</title>
         <item>
+            <title>3.1</title>
+            <description><![CDATA[
+                <h3>BlissfulScribe 3.1</h3>
+                <p>Improved diagnostics to help us catch and fix problems faster</p>
+            ]]></description>
+            <pubDate>Thu, 23 Jul 2026 16:27:26 GMT</pubDate>
+            <sparkle:version>301</sparkle:version>
+            <sparkle:shortVersionString>3.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.4</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/rijalalaina/blissfulscribe/releases/download/v3.1/BlissfulScribe-3.1.dmg" length="31797614" type="application/octet-stream" sparkle:edSignature="teZ19uR/rvKbLG4XUY7BYn1wzOYrL5JrzMSzGQjNsOt+WsL+OMo/z1v7bhVBCxuc+2zU3eXJWiJCwAXwAJBWAg=="/>
+        </item>
+        <item>
             <title>3.0</title>
             <description><![CDATA[
                 <h3>BlissfulScribe 3.0</h3>
