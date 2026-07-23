@@ -24,6 +24,7 @@ struct BlissfulScribeApp: App {
     @StateObject private var activeWindowService = ActiveWindowService.shared
     @AppStorage("hasCompletedOnboardingV2") private var hasCompletedOnboardingV2 = false
     @AppStorage("enableAnnouncements") private var enableAnnouncements = true
+    @AppStorage("enableDiagnostics") private var enableDiagnostics = false
     @State private var showMenuBarIcon = true
     @State private var didShowAccessibilityReminder = false
 
@@ -42,6 +43,11 @@ struct BlissfulScribeApp: App {
 
         AppDefaults.registerDefaults()
         OnboardingV2Migration.prepareIfNeeded()
+
+        // Must run here, not in .onAppear (which fires after window init and is too late).
+        if UserDefaults.standard.bool(forKey: "enableDiagnostics") {
+            DiagnosticsService.shared.start()
+        }
         // Theme applied in AppDelegate.applicationDidFinishLaunching (after NSApp is ready)
 
         let logger = Logger(subsystem: "com.goodtogreatmind.blissfulscribe", category: "Initialization")

@@ -94,6 +94,7 @@ class BlissfulScribeLicenceService {
         default:
             let msg = (try? JSONDecoder().decode(ErrorResponse.self, from: data))?.error ?? "HTTP \(http.statusCode)"
             logger.error("🔑 Error: \(msg, privacy: .public)")
+            DiagnosticsService.shared.track("Licence.requestFailed", parameters: ["path": req.url?.path ?? "", "statusCode": String(http.statusCode)])
             throw LicenseError.serverError(http.statusCode)
         }
     }

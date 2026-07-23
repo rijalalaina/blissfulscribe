@@ -221,6 +221,7 @@ class TranscriptionPipeline {
                         transcription.aiRequestUserMessage = enhancementService.lastUserMessageSent
                         finalText = enhancedText
                     } catch {
+                        DiagnosticsService.shared.track("Transcription.enhancementFailed", parameters: ["errorCategory": DiagnosticsService.errorCategory(for: error)])
                         let errorDescription = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
                         transcription.enhancedText = String(format: String(localized: "Enhancement failed: %@"), errorDescription)
                         responseError = errorDescription
@@ -238,6 +239,7 @@ class TranscriptionPipeline {
 
             transcription.transcriptionStatus = TranscriptionStatus.completed.rawValue
         } catch {
+            DiagnosticsService.shared.track("Transcription.failed", parameters: ["errorCategory": DiagnosticsService.errorCategory(for: error)])
             let errorDescription = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
 
             if let nativeAppleError = error as? NativeAppleTranscriptionService.ServiceError,

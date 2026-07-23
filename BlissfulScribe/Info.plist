@@ -8,6 +8,8 @@
 	<string>https://scribe.blissfulplan.com/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>NOIlOEtJj+IdZ9vD5N8nr8o8qnnPDNRLO9rmRkWoXNA=</string>
+	<key>TelemetryDeckAppID</key>
+	<string>YOUR-TELEMETRYDECK-APP-ID</string>
 	<key>LSUIElement</key>
 	<false/>
 	<key>SUEnableAutomaticChecks</key>
