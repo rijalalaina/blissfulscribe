@@ -71,6 +71,7 @@ if [ "$SIGN_IDENTITY" = "-" ]; then
   # Ad-hoc distribution build — same profile the shipped v3.0 used:
   # sandbox-only entitlements, universal binary, LOCAL_BUILD (no iCloud
   # sync; Sparkle updates still work). Requires no Apple certificate.
+  ENTITLEMENTS="$REPO_ROOT/BlissfulScribe/BlissfulScribe.local.entitlements"
   xcodebuild -project "$PROJECT" -scheme "$SCHEME" -configuration Release \
     -derivedDataPath "$DERIVED" \
     -xcconfig LocalBuild.xcconfig \
@@ -78,11 +79,12 @@ if [ "$SIGN_IDENTITY" = "-" ]; then
     CODE_SIGN_IDENTITY="-" \
     CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=YES \
     DEVELOPMENT_TEAM="" \
-    CODE_SIGN_ENTITLEMENTS="$REPO_ROOT/BlissfulScribe/BlissfulScribe.local.entitlements" \
+    CODE_SIGN_ENTITLEMENTS="$ENTITLEMENTS" \
     SWIFT_ACTIVE_COMPILATION_CONDITIONS='$(inherited) LOCAL_BUILD' \
     build | tail -5
 else
   # Proper Developer ID build with full entitlements (iCloud sync enabled).
+  ENTITLEMENTS="$REPO_ROOT/BlissfulScribe/BlissfulScribe.entitlements"
   xcodebuild -project "$PROJECT" -scheme "$SCHEME" -configuration Release \
     -derivedDataPath "$DERIVED" \
     MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$BUILD" \
@@ -95,6 +97,18 @@ APP="$DERIVED/Build/Products/Release/BlissfulScribe.app"
 
 BUILT_V=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "$APP/Contents/Info.plist")
 [ "$BUILT_V" = "$VERSION" ] || die "built app reports version $BUILT_V, expected $VERSION"
+
+step "Re-signing embedded frameworks"
+# whisper.xcframework ships pre-signed from its own separate build
+# (whisper.cpp's build-xcframework.sh); Xcode's CodeSignOnCopy embed step
+# doesn't always re-sign its nested Versions/A/<binary> to match the app's
+# own identity. Recent macOS dyld hard-rejects that mismatch at launch
+# ("different Team IDs") instead of just showing a Gatekeeper warning —
+# users see "cannot be opened because of a problem". A deep re-sign of the
+# fully assembled bundle guarantees every embedded binary shares one identity.
+codesign --force --deep --options runtime --entitlements "$ENTITLEMENTS" \
+  --sign "$SIGN_IDENTITY" "$APP"
+codesign --verify --deep --strict "$APP" || die "post-resign verification failed"
 
 step "Packaging $DMG_NAME"
 mkdir -p "$DIST"
