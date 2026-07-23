@@ -39,3 +39,8 @@ CF_ZONE_ID              = "21f03092fa8a356bbce8945aa32cdc7b"
 # blissfulplan.com site, whose traffic must not count as BlissfulScribe's.
 ANALYTICS_HOST          = "scribe.blissfulplan.com"
 GH_REPO                 = "rijalalaina/blissfulscribe"
+# "At risk" thresholds for the admin dashboard + automated nudge emails
+NEVER_ACTIVATED_GRACE_DAYS = "3"
+INACTIVE_THRESHOLD_DAYS    = "14"
+# Where the weekly health digest is sent (admin-only, not customer-facing)
+ADMIN_EMAIL                = "contact@blissfulplan.com"

@@ -36,6 +36,9 @@ export interface Env {
   CF_ZONE_ID: string;
   ANALYTICS_HOST: string;
   GH_REPO: string;
+  NEVER_ACTIVATED_GRACE_DAYS: string;
+  INACTIVE_THRESHOLD_DAYS: string;
+  ADMIN_EMAIL: string;
   CF_ANALYTICS_TOKEN?: string;
   GH_TOKEN?: string;
 }
@@ -57,6 +60,9 @@ interface LicenceRecord {
   stripeSessionId: string;
   activations: Activation[];
   isAdmin?: boolean;
+  lastValidatedAt?: string;
+  activationNudgeSentAt?: string;
+  inactivityNudgeSentAt?: string;
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -151,6 +157,52 @@ async function getLicence(kv: KVNamespace, key: string): Promise<LicenceRecord |
 /** Write a LicenceRecord back to KV */
 async function putLicence(kv: KVNamespace, record: LicenceRecord): Promise<void> {
   await kv.put(`licence:${record.key}`, JSON.stringify(record));
+}
+
+type LicenceStatus = "healthy" | "never_activated" | "inactive";
+
+/**
+ * Classifies a real (non-test, non-admin) licence by how likely its owner
+ * is to be stuck or to have silently churned, using /validate calls as a
+ * proxy heartbeat. Falls back to activation dates for records that predate
+ * lastValidatedAt tracking, so no KV backfill is needed.
+ */
+function classifyLicence(
+  record: LicenceRecord,
+  env: Env,
+  now: number = Date.now()
+): { status: LicenceStatus; days: number } {
+  const graceDays = parseInt(env.NEVER_ACTIVATED_GRACE_DAYS, 10);
+  const inactiveDays = parseInt(env.INACTIVE_THRESHOLD_DAYS, 10);
+  const ageDays = (now - new Date(record.createdAt).getTime()) / 86_400_000;
+
+  if (record.activations.length === 0) {
+    return { status: ageDays >= graceDays ? "never_activated" : "healthy", days: Math.floor(ageDays) };
+  }
+
+  const lastSeenIso = record.lastValidatedAt
+    ?? record.activations.reduce((latest, a) => (a.activatedAt > latest ? a.activatedAt : latest), record.activations[0].activatedAt);
+  const daysSinceSeen = (now - new Date(lastSeenIso).getTime()) / 86_400_000;
+  return { status: daysSinceSeen >= inactiveDays ? "inactive" : "healthy", days: Math.floor(daysSinceSeen) };
+}
+
+/** Shared sales/health stats, used by both the admin dashboard and the weekly digest email. */
+function computeLicenceStats(licenceRecords: LicenceRecord[], env: Env) {
+  const realLicences = licenceRecords.filter(r => !r.stripeSessionId?.startsWith("cs_test"));
+  const starterCount = realLicences.filter(r => r.product === "starter").length;
+  const proCount = realLicences.filter(r => r.product === "pro").length;
+  const revenue = starterCount * 9.99 + proCount * 19.99;
+  const totalDevices = realLicences.reduce((sum, r) => sum + r.activations.length, 0);
+  const attention = realLicences.reduce(
+    (acc, r) => {
+      const { status } = classifyLicence(r, env);
+      if (status === "never_activated") acc.neverActivated++;
+      else if (status === "inactive") acc.inactive++;
+      return acc;
+    },
+    { neverActivated: 0, inactive: 0 }
+  );
+  return { starterCount, proCount, revenue, totalDevices, attention };
 }
 
 /** Send licence key email via Resend */
@@ -417,6 +469,9 @@ async function handleWebhook(request: Request, env: Env): Promise<Response> {
   // Store in KV
   await putLicence(env.LICENCES, record);
   await env.LICENCES.put(`session:${sessionId}`, record.key);
+  // Lets the trial drip cron recognise this email has already purchased
+  // (handleScheduled checks this key, lowercased to match trial-start).
+  await env.LICENCES.put(`licensed:${email.toLowerCase()}`, "1");
 
   // Send email
   await sendLicenceEmail(env, email, name, record.key, product, maxActivations);
@@ -436,6 +491,15 @@ async function handleValidate(request: Request, env: Env): Promise<Response> {
 
   const record = await getLicence(env.LICENCES, key);
   if (!record) return err("Key not found", 404);
+
+  // The app calls /validate roughly at each launch — treat it as a
+  // heartbeat so the admin dashboard can tell active users from stuck
+  // ones. Throttled to avoid hammering the same KV key if ever called
+  // in a tight loop (KV has a practical ~1 write/sec/key ceiling).
+  if (!record.lastValidatedAt || Date.now() - new Date(record.lastValidatedAt).getTime() > 60_000) {
+    record.lastValidatedAt = new Date().toISOString();
+    await putLicence(env.LICENCES, record);
+  }
 
   // If activationId provided, check it still exists
   if (body.activationId) {
@@ -681,13 +745,162 @@ a{color:#2563eb}</style></head><body>
   return res.ok;
 }
 
+/** Sends a one-time "need a hand activating?" email. Returns true on success. */
+async function sendActivationNudgeEmail(env: Env, record: LicenceRecord): Promise<boolean> {
+  if (!record.email) return false;
+  const productLabel = record.product === "pro"
+    ? `Pro (${record.maxActivations} Macs)`
+    : `Starter (${record.maxActivations} Mac)`;
+
+  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+<style>body{font-family:-apple-system,sans-serif;background:#f8fafc;margin:0;padding:0;color:#0f172a}
+.wrap{max-width:520px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.hdr{background:linear-gradient(135deg,#2563eb,#0d9488);padding:28px 32px;text-align:center}
+.hdr h1{margin:0;color:#fff;font-size:20px;font-weight:700}
+.body{padding:28px 32px}
+.key-box{background:#f0f9ff;border:2px dashed #93c5fd;border-radius:12px;padding:20px;text-align:center;margin:20px 0}
+.key{font-family:'Courier New',monospace;font-size:18px;font-weight:700;color:#1d4ed8;letter-spacing:2px;word-break:break-all}
+.steps{background:#f8fafc;border-radius:10px;padding:16px 16px 16px 32px;margin:16px 0}
+.steps li{margin:6px 0;font-size:14px;color:#334155}
+.footer{background:#f8fafc;padding:16px 32px;text-align:center;color:#94a3b8;font-size:13px;border-top:1px solid #e2e8f0}
+a{color:#2563eb}</style></head><body>
+<div class="wrap">
+  <div class="hdr"><h1>Need a hand activating BlissfulScribe?</h1></div>
+  <div class="body">
+    <p>Hi ${record.name ? record.name.split(" ")[0] : "there"},</p>
+    <p>We noticed your ${productLabel} licence hasn't been activated on a Mac yet. Here's your key again, in case the first email got buried:</p>
+    <div class="key-box">
+      <div style="font-size:11px;color:#64748b;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Your Licence Key</div>
+      <div class="key">${record.key}</div>
+    </div>
+    <ol class="steps">
+      <li>Open <strong>BlissfulScribe</strong> on your Mac</li>
+      <li>Click the menu bar icon → <strong>Settings → Licence</strong></li>
+      <li>Paste the key above and click <strong>Activate</strong></li>
+    </ol>
+    <p style="color:#64748b;font-size:14px">Running into an issue, or bought this by mistake? Just reply to this email — we read every message and are happy to help either way.</p>
+    <p>The Blissfulplan Team</p>
+  </div>
+  <div class="footer">Blissfulplan Publishing Ltd. · London, UK</div>
+</div></body></html>`;
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: env.FROM_EMAIL,
+      to: record.email,
+      subject: "Need a hand activating BlissfulScribe?",
+      html,
+    }),
+  });
+  return res.ok;
+}
+
+/** Sends a one-time, low-pressure check-in to a licence that's gone quiet. Returns true on success. */
+async function sendInactivityNudgeEmail(env: Env, record: LicenceRecord): Promise<boolean> {
+  if (!record.email) return false;
+
+  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+<style>body{font-family:-apple-system,sans-serif;background:#f8fafc;margin:0;padding:0;color:#0f172a}
+.wrap{max-width:520px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.hdr{background:linear-gradient(135deg,#2563eb,#0d9488);padding:28px 32px;text-align:center}
+.hdr h1{margin:0;color:#fff;font-size:20px;font-weight:700}
+.body{padding:28px 32px}
+.footer{background:#f8fafc;padding:16px 32px;text-align:center;color:#94a3b8;font-size:13px;border-top:1px solid #e2e8f0}
+a{color:#2563eb}</style></head><body>
+<div class="wrap">
+  <div class="hdr"><h1>Everything OK with BlissfulScribe?</h1></div>
+  <div class="body">
+    <p>Hi ${record.name ? record.name.split(" ")[0] : "there"},</p>
+    <p>Just a quick check-in — we noticed it's been a while since BlissfulScribe was last opened on your Mac. If something's not working right, or a feature is confusing, just reply to this email and tell us. We read every message and would genuinely like to fix it.</p>
+    <p style="color:#64748b;font-size:14px">If you're just not using it much right now, no action needed — this is a one-off note, not a recurring email.</p>
+    <p>The Blissfulplan Team</p>
+  </div>
+  <div class="footer">Blissfulplan Publishing Ltd. · London, UK</div>
+</div></body></html>`;
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: env.FROM_EMAIL,
+      to: record.email,
+      subject: "Everything OK with BlissfulScribe?",
+      html,
+    }),
+  });
+  return res.ok;
+}
+
+/** Sends the weekly admin health digest. Returns true on success. */
+async function sendAdminDigestEmail(
+  env: Env,
+  summary: {
+    licencesSold: number;
+    starterCount: number;
+    proCount: number;
+    revenue: number;
+    totalDevices: number;
+    trialCount: number;
+    neverActivated: number;
+    inactive: number;
+  }
+): Promise<boolean> {
+  const row = (label: string, value: string) =>
+    `<tr><td style="padding:6px 0;color:#64748b">${label}</td><td style="padding:6px 0;text-align:right;font-weight:600">${value}</td></tr>`;
+
+  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+<style>body{font-family:-apple-system,sans-serif;background:#f8fafc;margin:0;padding:0;color:#0f172a}
+.wrap{max-width:480px;margin:32px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.08)}
+.hdr{background:linear-gradient(135deg,#2563eb,#0d9488);padding:20px 28px}
+.hdr strong{color:#fff;font-size:18px;font-weight:700}
+.body{padding:24px 28px}
+table{width:100%;border-collapse:collapse}
+.attn{color:#b45309;font-weight:700}
+.footer{background:#f8fafc;padding:14px 28px;text-align:center;color:#94a3b8;font-size:12px;border-top:1px solid #e2e8f0}</style></head><body>
+<div class="wrap">
+  <div class="hdr"><strong>BlissfulScribe — Weekly Digest</strong></div>
+  <div class="body">
+    <table>
+      ${row("Licences sold", String(summary.licencesSold))}
+      ${row("Starter / Pro", `${summary.starterCount} / ${summary.proCount}`)}
+      ${row("Est. gross revenue", `$${summary.revenue.toFixed(2)}`)}
+      ${row("Active devices", String(summary.totalDevices))}
+      ${row("Trial users", String(summary.trialCount))}
+    </table>
+    <hr style="border:none;border-top:1px solid #e2e8f0;margin:16px 0">
+    <table>
+      <tr><td style="padding:6px 0" class="attn">Never activated</td><td style="padding:6px 0;text-align:right" class="attn">${summary.neverActivated}</td></tr>
+      <tr><td style="padding:6px 0" class="attn">Gone quiet</td><td style="padding:6px 0;text-align:right" class="attn">${summary.inactive}</td></tr>
+    </table>
+    <p style="color:#64748b;font-size:13px;margin-top:16px">Both groups have already received a one-time automated nudge. Check your admin dashboard for who specifically needs attention.</p>
+  </div>
+  <div class="footer">Blissfulplan Publishing Ltd. · London, UK</div>
+</div></body></html>`;
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: env.FROM_EMAIL,
+      to: env.ADMIN_EMAIL,
+      subject: `BlissfulScribe weekly digest — ${new Date().toISOString().slice(0, 10)}`,
+      html,
+    }),
+  });
+  return res.ok;
+}
+
 /** Scheduled handler — runs daily via Cloudflare Cron.
- *  Iterates trial records and sends Day 2 / 5 / 7 drip emails. */
+ *  Sends trial drip emails, nudges at-risk licences, and sends a weekly admin digest. */
 async function handleScheduled(env: Env): Promise<void> {
   const drip = [2, 5, 7];
   const list = await env.LICENCES.list({ prefix: "trial:" });
+  let trialCount = 0;
 
   for (const key of list.keys) {
+    trialCount++;
     const raw = await env.LICENCES.get(key.name);
     if (!raw) continue;
 
@@ -714,6 +927,65 @@ async function handleScheduled(env: Env): Promise<void> {
         }
         break; // send at most one email per run per user
       }
+    }
+  }
+
+  // ── Licence health pass: nudge at-risk customers, once each ──────────────
+  const licenceList = await env.LICENCES.list({ prefix: "licence:" });
+  const licenceRecords: LicenceRecord[] = [];
+  for (const k of licenceList.keys) {
+    const raw = await env.LICENCES.get(k.name);
+    if (!raw) continue;
+    try {
+      const r = JSON.parse(raw) as LicenceRecord;
+      if (!r.isAdmin) licenceRecords.push(r);
+    } catch { continue; }
+  }
+
+  for (const record of licenceRecords) {
+    const isTest = record.stripeSessionId?.startsWith("cs_test") ?? false;
+    if (isTest) continue;
+
+    const { status } = classifyLicence(record, env);
+
+    if (status === "never_activated" && !record.activationNudgeSentAt) {
+      const ok = await sendActivationNudgeEmail(env, record);
+      if (ok) {
+        record.activationNudgeSentAt = new Date().toISOString();
+        await putLicence(env.LICENCES, record);
+        console.log(`Activation nudge sent to ${record.email}`);
+      }
+    } else if (status === "inactive" && !record.inactivityNudgeSentAt) {
+      const ok = await sendInactivityNudgeEmail(env, record);
+      if (ok) {
+        record.inactivityNudgeSentAt = new Date().toISOString();
+        await putLicence(env.LICENCES, record);
+        console.log(`Inactivity nudge sent to ${record.email}`);
+      }
+    }
+  }
+
+  // ── Weekly admin digest ───────────────────────────────────────────────────
+  const lastDigest = await env.LICENCES.get("meta:lastDigestSentAt");
+  const daysSinceDigest = lastDigest
+    ? (Date.now() - new Date(lastDigest).getTime()) / 86_400_000
+    : Infinity;
+
+  if (daysSinceDigest >= 7) {
+    const stats = computeLicenceStats(licenceRecords, env);
+    const ok = await sendAdminDigestEmail(env, {
+      licencesSold: stats.starterCount + stats.proCount,
+      starterCount: stats.starterCount,
+      proCount: stats.proCount,
+      revenue: stats.revenue,
+      totalDevices: stats.totalDevices,
+      trialCount,
+      neverActivated: stats.attention.neverActivated,
+      inactive: stats.attention.inactive,
+    });
+    if (ok) {
+      await env.LICENCES.put("meta:lastDigestSentAt", new Date().toISOString());
+      console.log("Weekly admin digest sent");
     }
   }
 }
@@ -906,7 +1178,7 @@ async function fetchGitHubDownloads(env: Env): Promise<{ releases: ReleaseDownlo
 function adminDashboardHtml(
   licences: LicenceRecord[],
   trials: { email: string; startedAt: string; sentDays: number[] }[],
-  stats: { starterCount: number; proCount: number; revenue: number; totalDevices: number },
+  stats: { starterCount: number; proCount: number; revenue: number; totalDevices: number; attention: { neverActivated: number; inactive: number } },
   adminKey: string,
   env: Env,
   message?: string,
@@ -932,6 +1204,19 @@ function adminDashboardHtml(
       const activeDevices = r.activations.map(a =>
         `<div style="font-size:11px;color:#94a3b8;padding:2px 0">${a.deviceName} · ${fmtDate(a.activatedAt)}</div>`
       ).join("");
+
+      let attentionHtml = "";
+      if (!isTest) {
+        const { status, days } = classifyLicence(r, env);
+        if (status === "never_activated") {
+          attentionHtml = `<div class="badge-attn">⚠ Never activated (${days}d)</div>`;
+          if (r.activationNudgeSentAt) attentionHtml += `<div class="nudge-note">nudge sent ${fmtDate(r.activationNudgeSentAt)}</div>`;
+        } else if (status === "inactive") {
+          attentionHtml = `<div class="badge-attn">⚠ Inactive (${days}d)</div>`;
+          if (r.inactivityNudgeSentAt) attentionHtml += `<div class="nudge-note">nudge sent ${fmtDate(r.inactivityNudgeSentAt)}</div>`;
+        }
+      }
+
       return `
         <tr>
           <td>${r.email || "<span style='color:#64748b'>—</span>"}</td>
@@ -940,6 +1225,7 @@ function adminDashboardHtml(
           <td>
             <span style="font-weight:600">${activRatio}</span>
             ${activeDevices}
+            ${attentionHtml}
           </td>
           <td style="color:#64748b;font-size:13px">${fmtDate(r.createdAt)}</td>
           <td>
@@ -1003,6 +1289,8 @@ function adminDashboardHtml(
     .badge-pro{background:linear-gradient(135deg,#2563eb,#0d9488);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
     .badge-starter{background:#334155;color:#94a3b8;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
     .badge-test{background:#422006;color:#fbbf24;font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px}
+    .badge-attn{color:#fbbf24;font-size:11px;font-weight:600;padding:2px 0}
+    .nudge-note{color:#64748b;font-size:10px;padding:1px 0}
     .btn-revoke{background:#450a0a;color:#fca5a5;border:1px solid #7f1d1d;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600}
     .btn-revoke:hover{background:#7f1d1d}
     .day-pill{background:#1e40af;color:#bfdbfe;font-size:11px;padding:2px 7px;border-radius:999px}
@@ -1043,6 +1331,10 @@ function adminDashboardHtml(
     <div class="stat">
       <div class="stat-val">${fmt(trials.length)}</div>
       <div class="stat-label">Trial users</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent">${fmt(stats.attention.neverActivated + stats.attention.inactive)}</div>
+      <div class="stat-label">Needs attention</div>
     </div>
   </div>
 
@@ -1164,12 +1456,8 @@ async function handleAdmin(request: Request, env: Env): Promise<Response> {
   }
 
   // Manually-minted test keys (stripeSessionId "cs_test…") stay visible in
-  // the table but must not count as sales.
-  const realLicences = licenceRecords.filter(r => !r.stripeSessionId?.startsWith("cs_test"));
-  const starterCount = realLicences.filter(r => r.product === "starter").length;
-  const proCount = realLicences.filter(r => r.product === "pro").length;
-  const revenue = starterCount * 9.99 + proCount * 19.99;
-  const totalDevices = realLicences.reduce((sum, r) => sum + r.activations.length, 0);
+  // the table but must not count as sales or "needs attention".
+  const { starterCount, proCount, revenue, totalDevices, attention } = computeLicenceStats(licenceRecords, env);
 
   // Fetch external stats in parallel
   const [siteStats, ghStats] = await Promise.all([
@@ -1183,7 +1471,7 @@ async function handleAdmin(request: Request, env: Env): Promise<Response> {
 
   const html = adminDashboardHtml(
     licenceRecords, trialRecords,
-    { starterCount, proCount, revenue, totalDevices },
+    { starterCount, proCount, revenue, totalDevices, attention },
     key, env, successMsg, siteStats, ghStats
   );
 
