@@ -3,6 +3,18 @@
     <channel>
         <title>BlissfulScribe</title>
         <item>
+            <title>3.2</title>
+            <description><![CDATA[
+                <h3>BlissfulScribe 3.2</h3>
+                <p>Added a Getting Started guide to help you set up models, modes, and preferences</p>
+            ]]></description>
+            <pubDate>Fri, 24 Jul 2026 18:25:45 GMT</pubDate>
+            <sparkle:version>302</sparkle:version>
+            <sparkle:shortVersionString>3.2</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.4</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/rijalalaina/blissfulscribe/releases/download/v3.2/BlissfulScribe-3.2.dmg" length="31851559" type="application/octet-stream" sparkle:edSignature="CESv+G7DWR45tgawdaGK0IOVqicKEaiyUbzyY/h2SkhobpQwpJjMUidrrzYfpVJouWCUQVjlFe4UKRn7IxnMCg=="/>
+        </item>
+        <item>
             <title>3.1.2</title>
             <description><![CDATA[
                 <h3>BlissfulScribe 3.1.2</h3>
