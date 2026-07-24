@@ -3,6 +3,18 @@
     <channel>
         <title>BlissfulScribe</title>
         <item>
+            <title>3.1.1</title>
+            <description><![CDATA[
+                <h3>BlissfulScribe 3.1.1</h3>
+                <p>Fixed a codesigning issue that could prevent the app from opening on first launch</p>
+            ]]></description>
+            <pubDate>Fri, 24 Jul 2026 00:36:26 GMT</pubDate>
+            <sparkle:version>301</sparkle:version>
+            <sparkle:shortVersionString>3.1.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.4</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/rijalalaina/blissfulscribe/releases/download/v3.1.1/BlissfulScribe-3.1.1.dmg" length="31798852" type="application/octet-stream" sparkle:edSignature="HE0BmD17fYjc8t1ZRBNy9gq/IWPfHsyTRYHWTnmLBMYDX4mnp+fKrv+mRkAVFnq1FnZLxqSbnLnnOMZWQCFUDA=="/>
+        </item>
+        <item>
             <title>3.1</title>
             <description><![CDATA[
                 <h3>BlissfulScribe 3.1</h3>
