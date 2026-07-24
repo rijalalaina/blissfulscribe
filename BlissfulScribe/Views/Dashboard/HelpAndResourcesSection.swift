@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct HelpAndResourcesSection: View {
+    @State private var showingGettingStarted = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Help & Resources")
@@ -8,6 +10,16 @@ struct HelpAndResourcesSection: View {
                 .foregroundStyle(.primary)
 
             VStack(alignment: .leading, spacing: 10) {
+                resourceLink(
+                    icon: "list.bullet.clipboard.fill",
+                    title: "Getting Started Guide",
+                    color: AppTheme.Sidebar.dashboard,
+                    trailingIcon: "chevron.right",
+                    action: {
+                        showingGettingStarted = true
+                    }
+                )
+
                 resourceLink(
                     icon: "sparkles",
                     title: "Recommended Models",
@@ -41,9 +53,12 @@ struct HelpAndResourcesSection: View {
         }
         .padding(18)
         .background(AppCardBackground(cornerRadius: 28))
+        .sheet(isPresented: $showingGettingStarted) {
+            GettingStartedView()
+        }
     }
-    
-    private func resourceLink(icon: String, title: LocalizedStringKey, color: Color, url: String? = nil, action: (() -> Void)? = nil) -> some View {
+
+    private func resourceLink(icon: String, title: LocalizedStringKey, color: Color, trailingIcon: String = "arrow.up.right", url: String? = nil, action: (() -> Void)? = nil) -> some View {
         Button(action: {
             if let action = action {
                 action()
@@ -53,14 +68,14 @@ struct HelpAndResourcesSection: View {
         }) {
             HStack(spacing: 10) {
                 DashboardIconGlyph(systemName: icon, color: color, size: 15, frameSize: 20)
-                
+
                 Text(title)
                     .font(.system(size: 13))
                     .fontWeight(.semibold)
-                
+
                 Spacer()
-                
-                Image(systemName: "arrow.up.right")
+
+                Image(systemName: trailingIcon)
                     .foregroundColor(.secondary)
             }
             .padding(12)
